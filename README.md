@@ -1,6 +1,3 @@
-[index.html](https://github.com/user-attachments/files/33316611/index.html)
-# mitchandmandysmeasures
-measurement and design saver app
 <!doctype html>
 <html lang="en">
 <head>
