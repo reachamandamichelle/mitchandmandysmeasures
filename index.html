@@ -169,8 +169,14 @@ h3.sec{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:.0
 .buy[aria-checked="true"] svg{opacity:1}
 .buy[disabled]{cursor:default}
 .save.isbought .d .tag{color:var(--good);font-weight:600}
-.tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--fill);border-radius:10px;padding:2px;margin-top:8px}
-.tabs button{border:0;background:transparent;font-size:15px;font-weight:600;padding:7px 10px;border-radius:8px;cursor:pointer;color:var(--ink)}
+.price{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.totals{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 4px}
+.totals div{background:var(--surface);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.totals b{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink)}
+.totals span{font-size:13px;color:var(--muted)}
+.form .row2{display:grid;grid-template-columns:1fr 110px;gap:8px}
+.tabs{display:grid;grid-template-columns:1fr 1fr 1fr;background:var(--fill);border-radius:10px;padding:2px;margin-top:8px}
+.tabs button{border:0;background:transparent;font-size:14px;font-weight:600;padding:7px 2px;white-space:nowrap;border-radius:8px;cursor:pointer;color:var(--ink)}
 .tabs button[aria-selected="true"]{background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.14)}
 .tabs .n{color:var(--muted);font-weight:500}
 .save .where{border:0;background:transparent;padding:0;color:var(--accent);font-size:13px;cursor:pointer;text-align:left}
@@ -201,7 +207,7 @@ h3.sec{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:.0
   <header class="top" id="top">
     <div class="titlebar"><h1>Home Measurements</h1>
       <div class="seg" role="group" aria-label="Units"><button id="uIn" aria-pressed="true">in</button><button id="uCm" aria-pressed="false">cm</button></div></div>
-    <div class="tabs" role="tablist" aria-label="View"><button id="tSpaces" role="tab">Spaces</button><button id="tBought" role="tab">Purchased <span class="n" id="boughtN"></span></button></div>
+    <div class="tabs" role="tablist" aria-label="View"><button id="tSpaces" role="tab">Spaces</button><button id="tToBuy" role="tab">To Buy <span class="n" id="toBuyN"></span></button><button id="tBought" role="tab">Purchased <span class="n" id="boughtN"></span></button></div>
     <div class="search">
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="8.5" cy="8.5" r="6"/><path d="m13 13 5 5"/></svg>
       <input id="q" type="search" placeholder="Search" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search" aria-label="Search spaces">
@@ -341,7 +347,7 @@ const CHECK='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-w
 const LINKIC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></svg>';
 
 // ---------- state ----------
-let tab=ls.get("hm-tab")==="bought"?"bought":"spaces", room="All", q="", unit=ls.get("hm-unit")==="cm"?"cm":"in", counts={}, bought={}, firstPhoto={}, saves=[], customs=[], SP=[];
+let tab=["bought","tobuy"].includes(ls.get("hm-tab"))?ls.get("hm-tab"):"spaces", room="All", q="", unit=ls.get("hm-unit")==="cm"?"cm":"in", counts={}, bought={}, firstPhoto={}, saves=[], customs=[], SP=[];
 let db=null, assets=null, canWrite=false, storeReady=false;
 let recents=[]; try{recents=JSON.parse(ls.get("hm-recent")||"[]").slice(0,6)}catch(_){}
 
@@ -415,10 +421,17 @@ function chips(){
 }
 $("#chips").addEventListener("click",e=>{const b=e.target.closest(".chip"); if(!b) return; room=b.dataset.r; ls.set("hm-room",room); chips(); render(); window.scrollTo({top:0});});
 
-function tabs(){ $("#tSpaces").setAttribute("aria-selected",tab==="spaces"); $("#tBought").setAttribute("aria-selected",tab==="bought");
-  const n=saves.filter(x=>x.purchased).length; $("#boughtN").textContent=n?`(${n})`:""; }
-$("#tSpaces").onclick=()=>{tab="spaces";ls.set("hm-tab",tab);tabs();render();window.scrollTo({top:0});};
-$("#tBought").onclick=()=>{tab="bought";ls.set("hm-tab",tab);tabs();render();window.scrollTo({top:0});};
+function tabs(){ $("#tSpaces").setAttribute("aria-selected",tab==="spaces"); $("#tToBuy").setAttribute("aria-selected",tab==="tobuy"); $("#tBought").setAttribute("aria-selected",tab==="bought");
+  const n=saves.filter(x=>x.purchased).length, t=saves.length-n;
+  $("#boughtN").textContent=n?`(${n})`:""; $("#toBuyN").textContent=t?`(${t})`:""; }
+[["#tSpaces","spaces"],["#tToBuy","tobuy"],["#tBought","bought"]].forEach(([sel,v])=>$(sel).onclick=()=>{tab=v;ls.set("hm-tab",tab);tabs();render();window.scrollTo({top:0});});
+
+// ---------- prices ----------
+// Prices are saved as plain numbers in dollars. "$1,299.99", "1299.99" and "1,299" all become 1299.99 or 1299.
+function parsePrice(v){ const s=String(v??"").replace(/[$,\s]/g,""); if(!s) return null; return /^\d+(\.\d{1,2})?$/.test(s)?+s:NaN; }
+const money=n=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:Number.isInteger(n)?0:2,maximumFractionDigits:2}).format(n);
+const hasPrice=x=>typeof x.price==="number"&&isFinite(x.price);
+function sumOf(list){ const priced=list.filter(hasPrice); return {total:Math.round(priced.reduce((a,x)=>a+x.price,0)*100)/100, missing:list.length-priced.length}; }
 
 // ---------- saved item row (shared by a space and the Purchased tab) ----------
 function spaceTitle(id){ const s=SP.find(x=>x.id===id); return s?(s.group?s.group+" · ":"")+s.name:"Deleted space"; }
@@ -428,9 +441,10 @@ function saveRow(x,inBought){
   const day=t=>t?new Date(t).toLocaleDateString(undefined,{month:"short",day:"numeric"}):"";
   const safe=x.url&&/^https?:/i.test(x.url);
   const buy=`<button class="buy" role="checkbox" aria-checked="${!!x.purchased}" aria-label="Purchased" data-buy="${esc(x.id)}" ${canWrite?"":"disabled"}>${CHECK}</button>`;
+  const pr=hasPrice(x)?`<span class="price">${money(x.price)}</span> · `:"";
   const meta=inBought
-    ? `<button class="where" data-open="${esc(x.space)}">${esc(spaceTitle(x.space))}</button><div class="d"><span class="tag">Purchased</span>${x.purchasedAt?" "+day(x.purchasedAt):""}</div>`
-    : `<div class="d">${x.purchased?`<span class="tag">Purchased</span>${x.purchasedAt?" "+day(x.purchasedAt):""} · `:""}${x.asset?"Photo":"Link"} · saved ${day(x.created)}</div>`;
+    ? `<button class="where" data-open="${esc(x.space)}">${esc(spaceTitle(x.space))}</button><div class="d">${pr}${x.purchased?`<span class="tag">Purchased</span>${x.purchasedAt?" "+day(x.purchasedAt):""}`:`${hasPrice(x)?"":"No price · "}saved ${day(x.created)}`}</div>`
+    : `<div class="d">${pr}${x.purchased?`<span class="tag">Purchased</span>${x.purchasedAt?" "+day(x.purchasedAt):""} · `:""}${x.asset?"Photo":"Link"} · saved ${day(x.created)}</div>`;
   return `<div class="save${x.purchased?" isbought":""}">${buy}${pic}<div class="info">${x.url?(safe?`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(host)}</a>`:`<div class="n">${esc(x.url)}</div>`):""}${x.note?`<div class="n">${esc(x.note)}</div>`:""}${meta}</div>${canWrite&&!inBought?`<div class="acts"><button class="link" data-edits="${esc(x.id)}">Edit</button><button class="link danger" data-del="${esc(x.id)}">Delete</button></div>`:""}</div>`;
 }
 // Checkmarks, photo viewer and "go to space" work the same everywhere.
@@ -446,18 +460,30 @@ document.addEventListener("click",async e=>{
   const o=e.target.closest("[data-open]");
   if(o&&SP.some(s=>s.id===o.dataset.open)) openView(o.dataset.open);
 });
+// The To Buy and Purchased tabs: saved items grouped by room, with a price total per room and overall.
 function renderBought(){
+  const done=tab==="bought";
   const words=norm(q);
-  const items=saves.filter(x=>x.purchased).map(x=>({x,s:SP.find(s=>s.id===x.space)}))
+  const inView=saves.map(x=>({x,s:SP.find(s=>s.id===x.space)}))
     .filter(({x,s})=>room==="All"||room==="Saved"||s?.room===room)
-    .filter(({x,s})=>{ if(!words.length) return true; const hay=" "+norm([s?.room,s?.group,s?.name,x.note,x.url].filter(Boolean).join(" ")).join(" "); return words.every(w=>hay.includes(" "+w)||(SYN[w]&&hay.includes(" "+SYN[w]))); })
-    .sort((a,b)=>(b.x.purchasedAt||0)-(a.x.purchasedAt||0));
-  let html="";
+    .filter(({x,s})=>{ if(!words.length) return true; const hay=" "+norm([s?.room,s?.group,s?.name,x.note,x.url].filter(Boolean).join(" ")).join(" "); return words.every(w=>hay.includes(" "+w)||(SYN[w]&&hay.includes(" "+SYN[w]))); });
+  const items=inView.filter(({x})=>!!x.purchased===done)
+    .sort((a,b)=>done?(b.x.purchasedAt||0)-(a.x.purchasedAt||0):(b.x.created||0)-(a.x.created||0));
+  const spent=sumOf(inView.filter(({x})=>x.purchased).map(({x})=>x)), left=sumOf(inView.filter(({x})=>!x.purchased).map(({x})=>x));
+  const where=room==="All"||room==="Saved"?"":` in ${room}`;
+  const noP=n=>n?`${n} without a price`:"";
+  let html=inView.length?`<div class="totals"><div><span>Spent${esc(where)}</span><b>${money(spent.total)}</b><span>${noP(spent.missing)||"&nbsp;"}</span></div><div><span>Still to buy${esc(where)}</span><b>${money(left.total)}</b><span>${noP(left.missing)||"&nbsp;"}</span></div></div>`:"";
+  let groups="";
   [...ROOMS,null].forEach(rn=>{
     const list=items.filter(({s})=>rn?s?.room===rn:!s); if(!list.length) return;
-    html+=`<section><div class="sechead">${esc(rn||"Other")}<span>${list.length} purchased</span></div><div class="group">${list.map(({x})=>saveRow(x,true)).join("")}</div></section>`;
+    const t=sumOf(list.map(({x})=>x));
+    const sub=`${list.length} ${done?"purchased":list.length===1?"item":"items"} · ${money(t.total)}${done?" spent":""}${t.missing?` · ${t.missing} without a price`:""}`;
+    groups+=`<section><div class="sechead">${esc(rn||"Other")}<span>${sub}</span></div><div class="group">${list.map(({x})=>saveRow(x,true)).join("")}</div></section>`;
   });
-  if(!html) html=q?`<div class="empty"><b>No purchased items match “${esc(q)}”</b></div>`:`<div class="empty"><b>No purchased items yet</b>Tap the circle next to a saved link or photo to mark it purchased.</div>`;
+  if(!groups) groups=q?`<div class="empty"><b>No ${done?"purchased":"unpurchased"} items match “${esc(q)}”</b></div>`
+    :done?`<div class="empty"><b>No purchased items yet</b>Tap the circle next to a saved link or photo to mark it purchased.</div>`
+    :`<div class="empty"><b>Nothing left to buy</b>Links and photos you save show here until you mark them purchased.</div>`;
+  html+=groups;
   $("#out").innerHTML=html;
   $("#out").querySelectorAll(".pic img").forEach(img=>img.addEventListener("error",()=>{img.replaceWith(document.createTextNode("Missing"));}));
 }
@@ -472,7 +498,7 @@ function rowHtml(s){
 }
 function render(){
   tabs();
-  if(tab==="bought") return renderBought();
+  if(tab!=="spaces") return renderBought();
   const words=norm(q);
   const list=search(SP.filter(s=>room==="All"||room===s.room||(room==="Saved"&&counts[s.id])),words);
   const showAdd=canWrite&&!q&&room!=="Saved";
@@ -867,24 +893,25 @@ function drawAddForm(){
   box.dataset.ready=openId;
   box.innerHTML=`<form class="form" id="addForm">
       <input id="lnk" type="url" inputmode="url" placeholder="Paste a product link" autocomplete="off" aria-label="Product link">
-      <input id="nt" type="text" placeholder="Note: size, price, color" autocomplete="off" aria-label="Note">
+      <div class="row2"><input id="nt" type="text" placeholder="Note: size, color" autocomplete="off" aria-label="Note"><input id="pr" type="text" inputmode="decimal" placeholder="$ Price" autocomplete="off" aria-label="Price"></div>
       <div class="btns"><button class="btn primary" type="submit" id="saveLink">Save Link</button>
       <label class="btn" for="ph" tabindex="0" ${assets?"":"hidden"}>Add Photo</label><input id="ph" type="file" accept="image/*" multiple hidden></div>
       <div class="status" id="st"></div></form>`;
   $("label[for=ph]")?.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); $("#ph").click(); }});
-  $("#addForm").addEventListener("submit",async e=>{e.preventDefault(); const u=cleanUrl($("#lnk").value); const n=$("#nt").value.trim();
+  $("#addForm").addEventListener("submit",async e=>{e.preventDefault(); const u=cleanUrl($("#lnk").value); const n=$("#nt").value.trim(); const p=parsePrice($("#pr").value);
     if(!u&&!n){st("Paste a link first.",1);return;}
+    if(Number.isNaN(p)){st("Type the price as a number, like 249 or 249.99.",1);return;}
     $("#saveLink").disabled=true; st("Saving…");
-    try{ await db.collection("saves").add({space:openId,url:u||null,note:n||null,created:Date.now()}); $("#lnk").value="";$("#nt").value=""; st(""); toast("Link saved"); }
+    try{ await db.collection("saves").add({space:openId,url:u||null,note:n||null,price:p,created:Date.now()}); $("#lnk").value="";$("#nt").value="";$("#pr").value=""; st(""); toast("Link saved"); }
     catch(err){ denied(err); st(errMsg(err),1); }
     finally{ const b=$("#saveLink"); if(b) b.disabled=false; }
   });
   $("#ph").addEventListener("change",async e=>{const files=[...e.target.files]; e.target.value=""; if(!files.length) return; const n=$("#nt").value.trim(); const sp=openId;
-    for(let i=0;i<files.length;i++){ st(`Uploading photo ${i+1} of ${files.length}…`);
+    let p=parsePrice($("#pr").value); if(Number.isNaN(p)){st("Type the price as a number, like 249 or 249.99.",1);return;}    for(let i=0;i<files.length;i++){ st(`Uploading photo ${i+1} of ${files.length}…`);
       try{ const blob=await shrink(files[i]); const r=await assets.upload(blob,{type:blob.type||"image/jpeg"});
-        await db.collection("saves").add({space:sp,asset:r.id,url:null,note:n||null,created:Date.now()}); }
+        await db.collection("saves").add({space:sp,asset:r.id,url:null,note:n||null,price:i===0?p:null,created:Date.now()}); }
       catch(err){ st(err?.code==="too_large"?"That photo is over 20 MB.":err?.code==="unsupported_type"?"That file type isn’t supported. Use a JPG, PNG or WebP.":"Couldn’t upload that photo. Try again.",1); return; } }
-    $("#nt").value=""; st(""); toast(files.length>1?"Photos saved":"Photo saved");
+    $("#nt").value=""; $("#pr").value=""; st(""); toast(files.length>1?"Photos saved":"Photo saved");
   });
 }
 function cleanUrl(v){ v=String(v).trim(); if(!v) return ""; const m=v.match(/https?:\/\/\S+/i); if(m) return m[0]; return /^[\w-]+(\.[\w-]+)+/.test(v)?"https://"+v:v; }
@@ -894,7 +921,7 @@ function drawSaveList(){
   box.innerHTML=mine.map(x=>{
     if(editS===x.id) return `<div class="save editing"><form class="form" id="sForm">
       ${x.asset?`<div class="hint">Photo note</div>`:`<input id="eLnk" type="url" inputmode="url" value="${esc(x.url??"")}" placeholder="Product link" aria-label="Product link">`}
-      <input id="eNt" type="text" value="${esc(x.note??"")}" placeholder="Note: size, price, color" aria-label="Note">
+      <div class="row2"><input id="eNt" type="text" value="${esc(x.note??"")}" placeholder="Note: size, color" aria-label="Note"><input id="ePr" type="text" inputmode="decimal" value="${hasPrice(x)?esc(String(x.price)):""}" placeholder="$ Price" aria-label="Price"></div>
       <div class="btns"><button class="btn primary" type="submit">Save</button><button class="btn" type="button" id="sCancel">Cancel</button></div>
       <div class="status" id="sSt"></div></form></div>`;
     return saveRow(x,false);
@@ -913,7 +940,9 @@ function drawSaveList(){
   const f=$("#sForm"); if(!f) return;
   $("#sCancel").onclick=()=>{editS=null;drawSaveList();};
   f.addEventListener("submit",async e=>{e.preventDefault();
-    const patch={note:$("#eNt").value.trim()||null}; if($("#eLnk")) patch.url=cleanUrl($("#eLnk").value)||null;
+    const p=parsePrice($("#ePr").value);
+    if(Number.isNaN(p)){ const s=$("#sSt"); if(s){s.textContent="Type the price as a number, like 249 or 249.99."; s.className="status err";} return; }
+    const patch={note:$("#eNt").value.trim()||null,price:p}; if($("#eLnk")) patch.url=cleanUrl($("#eLnk").value)||null;
     const btn=f.querySelector("[type=submit]"); btn.disabled=true;
     try{ await db.collection("saves").doc(editS).update(patch); editS=null; drawSaveList(); toast("Changes saved"); }
     catch(err){ denied(err); btn.disabled=false; const s=$("#sSt"); if(s){s.textContent=errMsg(err); s.className="status err";} }
