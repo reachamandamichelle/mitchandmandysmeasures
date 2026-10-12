@@ -195,7 +195,6 @@ h3.sec{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:.0
 .tabs button[aria-selected="true"]{background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.14)}
 .tabs .n{color:var(--muted);font-weight:500}
 .save .where{border:0;background:transparent;padding:0;color:var(--accent);font-size:13px;cursor:pointer;text-align:left}
-.save.editing{display:block;padding:0}
 .save{flex-wrap:wrap}
 .save .pic{position:relative}
 .save .pic img.cropped{position:absolute;max-width:none;object-fit:fill}
@@ -222,6 +221,35 @@ h3.sec{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:.0
 .sheet .pair2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .save .pic.addpic{cursor:pointer;color:var(--accent);flex-direction:column;gap:2px;font-size:11px;font-weight:600;border:1.5px dashed var(--sep)}
 .save .pic.addpic svg{width:22px;height:22px}
+.homepics{flex-basis:100%;display:grid;gap:6px}
+.homepics .hl{font-size:13px;font-weight:600;color:var(--muted)}
+.hstrip{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+.hstrip::-webkit-scrollbar{display:none}
+.hthumb{flex:none;width:72px;height:72px;border-radius:10px;overflow:hidden;border:0;padding:0;background:var(--fill);cursor:zoom-in}
+.hthumb{position:relative}
+.hthumb img{width:100%;height:100%;object-fit:cover}
+.hcount{position:absolute;left:4px;bottom:4px;display:flex;align-items:center;gap:3px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;font-weight:700;border-radius:999px;padding:2px 6px}
+.hcount svg{width:11px;height:11px}
+.rsheet{max-height:92vh;overflow-y:auto}
+.rsheet .rimg{width:100%;max-height:52vh;object-fit:contain;border-radius:12px;background:var(--fill);cursor:zoom-in}
+.rsheet .rcap{font-size:13px;color:var(--muted)}
+.rsheet .cmts{display:grid;gap:6px}
+.hadd{flex:none;border:1.5px dashed var(--accent);background:transparent;color:var(--accent);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;padding:0 12px;min-height:36px}
+.hstrip .hadd{width:72px;height:72px;font-size:24px;padding:0}
+.homepics.none{display:flex}
+.homepics.none .hadd{border:0;padding:2px 0;min-height:28px;font-size:13px}
+.vbar{position:fixed;left:0;right:0;bottom:0;z-index:41;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));color:#fff;font-size:14px;background:linear-gradient(transparent,rgba(0,0,0,.7))}
+.vbar button{border:0;background:rgba(255,255,255,.18);color:#fff;font-weight:600;font-size:15px;border-radius:999px;padding:8px 14px;cursor:pointer}
+.linkrow{display:grid;grid-template-columns:64px 1fr;gap:10px;align-items:center}
+.slot{width:64px;height:64px;border-radius:10px;border:1.5px dashed var(--accent);background:var(--fill);color:var(--accent);display:grid;place-items:center;align-content:center;gap:2px;font-size:11px;font-weight:600;cursor:pointer;padding:0;overflow:hidden;position:relative}
+.slot svg{width:22px;height:22px}
+.slot.has{border:0}
+.slot img{position:absolute;max-width:none}
+.save.editing{display:block;padding:12px;margin:8px;border-radius:12px;box-shadow:inset 0 0 0 2px var(--accent)}
+.save.editing .form{padding:0}
+.edithead{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.edithead .t{font-size:15px;font-weight:600}
+.edithead .h{font-size:13px;color:var(--muted)}
 .sheetbg{position:fixed;inset:0;z-index:45;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center}
 .sheet{width:100%;max-width:520px;background:var(--surface);border-radius:16px 16px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));display:grid;gap:12px}
 @media (min-width:760px){.sheetbg{align-items:center}.sheet{border-radius:16px}}
@@ -240,7 +268,7 @@ h3.sec{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:.0
 .likedby b{color:var(--ink);font-weight:600}
 .who{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .who .btn{justify-content:center;font-size:17px;min-height:52px}
-.viewer{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:16px;cursor:zoom-out}
+.viewer{position:fixed;inset:0;z-index:48;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:16px;cursor:zoom-out}
 .viewer img{max-height:100%;max-width:100%;border-radius:10px}
 .gate{position:fixed;inset:0;z-index:60;background:var(--bg);display:grid;place-items:center;padding:24px 16px}
 .gatebox{width:100%;max-width:380px;display:grid;gap:12px;background:var(--surface);border-radius:16px;padding:22px 18px}
@@ -522,8 +550,11 @@ function picImg(src,x,alt,extra){ const c=x.crop; return c?`<img class="cropped"
 function cropCss(c,w,h){ const M=Math.max(w,h), W=c.z*w/M, Hh=c.z*h/M; return {width:W*100+"%",height:Hh*100+"%",left:(50-c.x*W*100)+"%",top:(50-c.y*Hh*100)+"%"}; }
 function fitCrop(img){ try{ const c=JSON.parse(img.dataset.crop); if(!img.naturalWidth) return; Object.assign(img.style,cropCss(c,img.naturalWidth,img.naturalHeight)); }catch(_){} }
 const openC=new Set(), cDraft={};
+function homePicsFor(id){ return customs.filter(c=>c.kind=="homepic"&&c.item===id).sort((a,b)=>(a.created||0)-(b.created||0)); }
 function commentsFor(id){ return customs.filter(c=>c.kind==="comment"&&c.item===id).sort((a,b)=>(a.created||0)-(b.created||0)); }
 function saveRow(x,inBought){
+  // Edit happens in place. With a space open, only the space's list edits (the tab list underneath stays as is).
+  if(editS===x.id&&(!inBought||!openId)) return editCard(x);
   const pic=x.asset?`<button class="pic" data-view="${esc(x.asset)}" aria-label="View photo">${picImg(blobUrl(x.asset),x,"Saved photo")}</button>`
     :x.img?`<button class="pic" data-viewurl="${esc(x.img)}" aria-label="View image">${picImg(x.img,x,"Item image",'referrerpolicy="no-referrer"')}</button>`
     :canWrite?`<button class="pic addpic" data-addpic="${esc(x.id)}" aria-label="Add an image">${PICPLUS}Add image</button>`:`<div class="pic linkic">${LINKIC}</div>`;
@@ -542,16 +573,20 @@ function saveRow(x,inBought){
     +(likedBy(x)?`<span class="likedby">${likedBy(x)}</span>`:"")+`</div>`;
   const cmts=(cm.length||open)?`<div class="cmts">${cm.map(c=>`<div class="cmt"><span class="ct"><b>${esc(c.by||"")}</b> ${esc(c.text)} <span class="cd">${day(c.created)}</span></span>${canWrite&&me&&c.by===me.name?`<button class="cx" data-delc="${esc(c.id)}" aria-label="Delete comment">×</button>`:""}</div>`).join("")}`
     +(open&&canWrite?`<form class="cform" data-cfor="${esc(x.id)}"><input class="cin" maxlength="280" placeholder="Add a comment" aria-label="Add a comment" enterkeyhint="send" value="${esc(cDraft[x.id]||"")}"><button type="submit">Post</button></form>`:"")+`</div>`:"";
-  const acts=canWrite?`<div class="acts">${inBought?"":`<button class="link" data-edits="${esc(x.id)}">Edit</button>`}<button class="link danger" data-del="${esc(x.id)}">Delete</button></div>`:"";
-  return `<div class="save${x.purchased?" isbought":""}">${pic}<div class="info">${x.url?(safe?`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(host)}</a>`:`<div class="n">${esc(x.url)}</div>`):""}${x.note?`<div class="n">${esc(x.note)}</div>`:""}${meta}</div>${acts}${bar}${cmts}</div>`;
+  const acts=canWrite?`<div class="acts">${inBought&&openId?"":`<button class="link" data-edits="${esc(x.id)}">Edit</button>`}<button class="link danger" data-del="${esc(x.id)}">Delete</button></div>`:"";
+  const hp=homePicsFor(x.id);
+  const home=hp.length?`<div class="homepics"><span class="hl">AI Render - See in our Space</span><div class="hstrip">${hp.map(h=>{ const nl=PEOPLE.filter(q=>h[q.field]).length, nc=commentsFor(h.id).length;
+      return `<button class="hthumb" data-homeview="${esc(h.id)}" aria-label="View AI render"><img src="${esc(h.asset?blobUrl(h.asset):h.img)}" alt="" loading="lazy" ${h.img?'referrerpolicy="no-referrer"':""}>${nl||nc?`<span class="hcount">${nl?THUMB+nl:""}${nc?BUBBLE+nc:""}</span>`:""}</button>`; }).join("")}${canWrite?`<button class="hadd" data-homeadd="${esc(x.id)}" aria-label="Add another AI render">+</button>`:""}</div></div>`
+    :canWrite?`<div class="homepics none"><button class="hadd" data-homeadd="${esc(x.id)}">+ AI Render - See in our Space</button></div>`:"";
+  return `<div class="save${x.purchased?" isbought":""}">${pic}<div class="info">${x.url?(safe?`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(host)}</a>`:`<div class="n">${esc(x.url)}</div>`):""}${x.note?`<div class="n">${esc(x.note)}</div>`:""}${meta}</div>${acts}${bar}${home}${cmts}</div>`;
 }
 // Checkmarks, photo viewer and "go to space" work the same everywhere.
 document.addEventListener("click",async e=>{
-  const lk=e.target.closest("[data-like]");
+  const lk=e.target.closest("[data-like],[data-like-r]");
   if(lk&&canWrite&&db){ const me=meP(); if(!me) return askWho(()=>lk.isConnected&&lk.click());
-    const x=saves.find(s=>s.id===lk.dataset.like); if(!x) return; const now=!x[me.field];
+    const isR=!!lk.dataset.likeR, coll=isR?"custom":"saves", x=(isR?customs:saves).find(s=>s.id===(isR?lk.dataset.likeR:lk.dataset.like)); if(!x) return; const now=!x[me.field];
     lk.disabled=true;
-    try{ await db.collection("saves").doc(x.id).update({[me.field]:now}); }
+    try{ await db.collection(coll).doc(x.id).update({[me.field]:now}); }
     catch(err){ denied(err); toast("Couldn’t update. Try again."); }
     finally{ if(lk.isConnected) lk.disabled=false; } return; }
   const b=e.target.closest("[data-buy]");
@@ -562,6 +597,15 @@ document.addEventListener("click",async e=>{
     catch(err){ denied(err); toast("Couldn’t update. Try again."); }
     finally{ b.disabled=!canWrite; } return; }
   const ap=e.target.closest("[data-addpic]"); if(ap&&canWrite&&db) return openPicSheet(ap.dataset.addpic);
+  const ha=e.target.closest("[data-homeadd]");
+  if(ha&&canWrite&&db){ const id=ha.dataset.homeadd;
+    return pickImage({title:"AI Render - See in our Space",done:async source=>{
+      const me=meP(); toast("Saving render…",null,60000);
+      try{ const doc={kind:"homepic",item:id,by:me?.name||null,created:Date.now()};
+        if(source.blob){ const small=await shrink(source.blob); const r=await assets.upload(small,{type:small.type||"image/jpeg"}); doc.asset=r.id; } else doc.img=source.url;
+        await db.collection("custom").add(doc); toast("Render added"); }
+      catch(_){ toast("Couldn’t save that render. Try again."); } }}); }
+  const hv=e.target.closest("[data-homeview]"); if(hv) return openRender(hv.dataset.homeview);
   const cr=e.target.closest("[data-crop-open]"); if(cr&&canWrite&&db) return openCropper(cr.dataset.cropOpen);
   const ct=e.target.closest("[data-cmt]");
   if(ct&&canWrite){ const id=ct.dataset.cmt; if(openC.has(id)) openC.delete(id); else openC.add(id); redrawItems();
@@ -576,7 +620,11 @@ document.addEventListener("click",async e=>{
       await db.collection("saves").doc(x.id).delete();
       let undone=false;
       toast(x.url?"Link deleted":"Photo deleted",()=>{undone=true; db.collection("saves").doc(x.id).set(stripId(x)).catch(()=>toast("Couldn’t restore it"));});
-      if(x.asset&&assets) setTimeout(()=>{ if(!undone) assets.delete(x.asset).catch(()=>{}); },6000);
+      setTimeout(async()=>{ if(undone) return;
+        if(x.asset&&assets) assets.delete(x.asset).catch(()=>{});
+        const rids=customs.filter(c=>c.kind==="homepic"&&c.item===x.id).map(c=>c.id);
+        for(const c of customs.filter(c=>(c.item===x.id&&(c.kind==="homepic"||c.kind==="comment"))||(c.kind==="comment"&&rids.includes(c.item)))){
+          try{ await db.collection("custom").doc(c.id).delete(); if(c.asset) assets.delete(c.asset).catch(()=>{}); }catch(_){} } },6000);
     }catch(_){ del.disabled=false; toast("Couldn’t delete. Try again."); } return; }
   const vu=e.target.closest("[data-viewurl]"); if(vu){ const el=document.createElement("div"); el.className="viewer"; el.innerHTML=`<img src="${esc(vu.dataset.viewurl)}" alt="Item image" referrerpolicy="no-referrer">`; el.onclick=()=>el.remove(); document.body.appendChild(el); return; }
   const v=e.target.closest("[data-view]");
@@ -759,11 +807,11 @@ function startData(){
     saves=snap.docs.map(d=>({id:d.id,...d.data()}));
     counts={}; bought={}; firstPhoto={};
     saves.forEach(s=>{counts[s.space]=(counts[s.space]||0)+1; if(s.purchased) bought[s.space]=(bought[s.space]||0)+1; if(s.asset&&!firstPhoto[s.space]) firstPhoto[s.space]=s.asset;});
-    storeReady=true; if(typingComment()){ heldDraw=true; return; } render(); refreshView("saves");
+    storeReady=true; if(typingComment()){ heldDraw=true; return; } render(); refreshView("saves"); if(openR) drawRender();
   });
   db.collection("custom").orderBy("created","asc").onSnapshot(snap=>{
     customs=snap.docs.map(d=>({id:d.id,...d.data()}));
-    rebuild(); if(typingComment()) heldDraw=true; else { render(); refreshView("meas"); if(openId&&!editS) drawSaveList(); }
+    rebuild(); if(typingComment()) heldDraw=true; else { render(); refreshView("meas"); if(openId) drawSaveList(); if(openR) drawRender(); }
   });
   loadAll();
   // Pick up what the other phone added: when the app is opened and every 20 seconds while it's open.
@@ -778,39 +826,33 @@ async function initStore(){
 
 // ---------- add an image to a saved link ----------
 // The image is either pasted (saved as a photo in your private repository) or an image web address (shown straight from the store).
-function openPicSheet(id){
-  const x=saves.find(s=>s.id===id); if(!x) return;
+// Pick an image by pasting it, pasting its web address, or choosing from Photos. Calls done({blob}) or done({url}).
+function pickImage({title,hasImage,onAdjust,onRemove,done}){
   $("#picSheet")?.remove();
   const g=document.createElement("div"); g.id="picSheet"; g.className="sheetbg";
-  g.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-label="Add an image">
-    <h2>${x.asset||x.img?"Change image":"Add an image"}</h2>
+  g.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+    <h2>${esc(title)}</h2>
     <p>On the store’s page, press and hold the product picture and tap <b>Copy</b>. Then come back here and tap <b>Paste Image</b>.</p>
     <button class="btn primary" id="pPaste">Paste Image</button>
     <div class="pastebox" id="pBox" contenteditable="true" role="textbox" aria-label="Paste an image or image address">Or tap here and paste the image or its web address</div>
     <label class="btn" for="pFile" tabindex="0">Choose from Photos</label><input id="pFile" type="file" accept="image/*" hidden>
-    ${x.asset||x.img?`<button class="btn" data-crop-open="${esc(x.id)}" id="pAdjust">Adjust Current Image</button><button class="btn danger" id="pRemove">Remove Image</button>`:""}
+    ${hasImage?`<button class="btn" id="pAdjust">Adjust Current Image</button><button class="btn danger" id="pRemove">Remove Image</button>`:""}
     <button class="btn" id="pCancel">Cancel</button>
     <div class="status" id="pSt"></div></div>`;
   document.body.appendChild(g);
   const st=(m,err)=>{ const e=$("#pSt"); if(e){ e.textContent=m; e.className="status"+(err?" err":""); } };
   const close=()=>g.remove();
   g.addEventListener("click",e=>{ if(e.target===g) close(); });
-  $("#pCancel").onclick=close; $("#pAdjust")?.addEventListener("click",close);
-  const oldAsset=x.asset;
-  async function useBlob(blob){
-    try{ st("Saving image…"); const small=await shrink(blob); const r=await assets.upload(small,{type:small.type||"image/jpeg"});
-      await db.collection("saves").doc(id).update({asset:r.id,img:null,crop:null});
-      if(oldAsset) assets.delete(oldAsset).catch(()=>{});
-      close(); toast("Image added"); openCropper(id); }
-    catch(err){ st("Couldn’t save that image. Try again.",1); }
-  }
+  $("#pCancel").onclick=close;
+  $("#pAdjust")?.addEventListener("click",()=>{ close(); onAdjust(); });
+  $("#pRemove")?.addEventListener("click",async()=>{ try{ await onRemove(); close(); }catch(_){ st("Couldn’t remove. Try again.",1); } });
+  const useBlob=blob=>{ close(); done({blob}); };
   async function useUrl(t){
     const m=String(t).match(/https?:\/\/\S+/i); if(!m) return st("That isn’t an image or an image address. Copy the picture itself and try again.",1);
     const url=m[0]; st("Checking the image…");
     const ok=await new Promise(res=>{ const im=new Image(); im.referrerPolicy="no-referrer"; im.onload=()=>res(im.naturalWidth>0); im.onerror=()=>res(false); im.src=url; setTimeout(()=>res(false),8000); });
     if(!ok) return st("That address didn’t open as a picture. On the store’s page, press and hold the picture and tap Copy, then Paste Image.",1);
-    try{ await db.collection("saves").doc(id).update({img:url,asset:null,crop:null}); if(oldAsset) assets.delete(oldAsset).catch(()=>{}); close(); toast("Image added"); openCropper(id); }
-    catch(_){ st("Couldn’t save. Try again.",1); }
+    close(); done({url});
   }
   $("#pPaste").onclick=async()=>{
     try{
@@ -829,46 +871,52 @@ function openPicSheet(id){
     const html=dt.getData("text/html"), src=html&&html.match(/<img[^>]+src=["']([^"']+)/i)?.[1];
     useUrl(src||dt.getData("text/plain")); });
   $("#pFile").addEventListener("change",e=>{ const f=e.target.files[0]; e.target.value=""; if(f) useBlob(f); });
-  $("#pRemove")?.addEventListener("click",async()=>{ try{ await db.collection("saves").doc(id).update({asset:null,img:null,crop:null}); if(oldAsset) assets.delete(oldAsset).catch(()=>{}); close(); toast("Image removed"); }catch(_){ st("Couldn’t remove. Try again.",1); } });
 }
-
-// ---------- comments ----------
-document.addEventListener("input",e=>{ const f=e.target.closest?.("[data-cfor]"); if(f) cDraft[f.dataset.cfor]=e.target.value; });
-document.addEventListener("submit",async e=>{ const f=e.target.closest("[data-cfor]"); if(!f) return; e.preventDefault();
-  const id=f.dataset.cfor, inp=f.querySelector(".cin"), text=inp.value.trim(); if(!text) return;
-  const me=meP(); if(!me) return askWho(()=>f.isConnected&&f.requestSubmit());
-  const btn=f.querySelector("button"); btn.disabled=true; inp.disabled=true;
-  try{ await db.collection("custom").add({kind:"comment",item:id,by:me.name,text:text.slice(0,280),created:Date.now()}); delete cDraft[id]; inp.blur(); toast("Comment posted"); }
-  catch(err){ denied(err); btn.disabled=false; inp.disabled=false; toast("Couldn’t post. Try again."); }
-});
-// Redraw item lists without interrupting someone typing a comment.
-let heldDraw=false;
-function typingComment(){ return document.activeElement?.classList?.contains("cin"); }
-document.addEventListener("focusout",e=>{ if(e.target.classList?.contains("cin")) setTimeout(()=>{ if(heldDraw&&!typingComment()){ heldDraw=false; redrawItems(); } },0); });
-function redrawItems(){ if(typingComment()){ heldDraw=true; return; } render(); if(openId&&!editS) drawSaveList(); }
-
-// ---------- adjust (crop) an item image ----------
-// Saves a zoom level and the image point shown at the center of the square. The original image is kept.
+// Save a picked image (and its crop) onto a saved item, replacing any image it had.
+async function saveImageTo(id,source,crop){
+  const old=saves.find(s=>s.id===id)?.asset;
+  if(source.blob){ const small=await shrink(source.blob); const r=await assets.upload(small,{type:small.type||"image/jpeg"});
+    await db.collection("saves").doc(id).update({asset:r.id,img:null,crop}); }
+  else await db.collection("saves").doc(id).update({img:source.url,asset:null,crop});
+  if(old) assets.delete(old).catch(()=>{});
+}
+function afterImage(){ render(); if(openId) drawSaveList(); }
+const srcOf=source=>source.blob?URL.createObjectURL(source.blob):source.url;
+// Add or change the image on a saved item: pick it, adjust it, and it saves once.
+function openPicSheet(id){
+  const x=saves.find(s=>s.id===id); if(!x) return; const has=!!(x.asset||x.img);
+  pickImage({title:has?"Change Image":"Add an Image",hasImage:has,
+    onAdjust:()=>openCropper(id),
+    onRemove:async()=>{ await db.collection("saves").doc(id).update({asset:null,img:null,crop:null}); if(x.asset) assets.delete(x.asset).catch(()=>{}); afterImage(); toast("Image removed"); },
+    done:source=>adjustImage({src:srcOf(source),isUrl:!!source.url,crop:null,saveLabel:"Save Image",
+      onSave:async c=>{ await saveImageTo(id,source,c); afterImage(); toast("Image saved"); }})});
+}
+// Adjust the image an item already has.
 function openCropper(id){
   const x=saves.find(s=>s.id===id); if(!x||!(x.asset||x.img)) return;
+  adjustImage({src:x.asset?blobUrl(x.asset):x.img,isUrl:!!x.img,crop:x.crop,saveLabel:"Save",
+    onSave:async c=>{ await db.collection("saves").doc(id).update({crop:c}); afterImage(); toast("Image adjusted"); }});
+}
+// The adjust screen: drag to move, slider to zoom. Saves a zoom level and the image point at the center of the square.
+function adjustImage({src,isUrl,crop,saveLabel,onSave}){
   $("#cropSheet")?.remove();
-  const src=x.asset?blobUrl(x.asset):x.img;
   const g=document.createElement("div"); g.id="cropSheet"; g.className="sheetbg";
   g.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-label="Adjust image">
     <h2>Adjust Image</h2><p>Drag to move the picture. Use the slider to zoom. The square is what shows next to the item.</p>
-    <div class="cropbox" id="cBox"><img id="cImg" src="${esc(src)}" alt="" ${x.img?'referrerpolicy="no-referrer"':""}></div>
+    <div class="cropbox" id="cBox"><img id="cImg" src="${esc(src)}" alt="" ${isUrl?'referrerpolicy="no-referrer"':""}></div>
     <div class="zoomrow">Zoom <input id="cZoom" type="range" min="1" max="4" step="0.01" aria-label="Zoom"></div>
     <div class="pair2"><button class="btn" id="cWhole">Show Whole Image</button><button class="btn" id="cFill">Fill Square</button></div>
-    <button class="btn primary" id="cSave">Save</button><button class="btn" id="cCancel">Cancel</button>
+    <button class="btn primary" id="cSave">${esc(saveLabel||"Save")}</button><button class="btn" id="cCancel">Cancel</button>
     <div class="status" id="cSt"></div></div>`;
   document.body.appendChild(g);
   const img=$("#cImg"), box=$("#cBox"), zoom=$("#cZoom"); let c=null, w=1, h=1, cover=1;
+  const st=(m,err)=>{ $("#cSt").textContent=m; $("#cSt").className="status"+(err?" err":""); };
   const clamp=v=>Math.min(1,Math.max(0,v));
   const draw=()=>{ Object.assign(img.style,cropCss(c,w,h)); zoom.value=c.z; };
   const ready=()=>{ w=img.naturalWidth||1; h=img.naturalHeight||1; cover=Math.max(w,h)/Math.min(w,h);
-    zoom.max=Math.max(3,cover*3); c=x.crop?{...x.crop}:{z:cover,x:.5,y:.5}; draw(); };
+    zoom.max=Math.max(3,cover*3); c=crop?{...crop}:{z:cover,x:.5,y:.5}; draw(); };
   if(img.complete&&img.naturalWidth) ready(); else img.onload=ready;
-  img.onerror=()=>{ $("#cSt").textContent="This image couldn’t be loaded to adjust."; $("#cSt").className="status err"; };
+  img.onerror=()=>st("This image couldn’t be loaded to adjust.",1);
   let drag=null;
   box.addEventListener("pointerdown",e=>{ if(!c) return; drag={px:e.clientX,py:e.clientY,x:c.x,y:c.y}; box.setPointerCapture(e.pointerId); });
   box.addEventListener("pointermove",e=>{ if(!drag) return; const S=box.clientWidth, M=Math.max(w,h);
@@ -880,9 +928,53 @@ function openCropper(id){
   const close=()=>g.remove();
   $("#cCancel").onclick=close; g.addEventListener("click",e=>{ if(e.target===g) close(); });
   $("#cSave").onclick=async()=>{ if(!c) return; const r=v=>Math.round(v*10000)/10000;
-    try{ $("#cSave").disabled=true; await db.collection("saves").doc(id).update({crop:{z:r(c.z),x:r(c.x),y:r(c.y)}}); close(); toast("Image adjusted"); }
-    catch(_){ $("#cSave").disabled=false; $("#cSt").textContent="Couldn’t save. Try again."; $("#cSt").className="status err"; } };
+    $("#cSave").disabled=true; $("#cCancel").disabled=true; st("Saving…");
+    try{ await onSave({z:r(c.z),x:r(c.x),y:r(c.y)}); close(); }
+    catch(_){ $("#cSave").disabled=false; $("#cCancel").disabled=false; st("Couldn’t save. Check your connection and try again.",1); } };
 }
+
+// ---------- AI render sheet: the render, its likes and comments ----------
+let openR=null;
+function openRender(id){ openR=id; $("#rSheet")?.remove();
+  const g=document.createElement("div"); g.id="rSheet"; g.className="sheetbg";
+  g.innerHTML=`<div class="sheet rsheet" role="dialog" aria-modal="true" aria-label="AI Render - See in our Space"><div id="rBody"></div></div>`;
+  document.body.appendChild(g);
+  g.addEventListener("click",e=>{ if(e.target===g||e.target.closest("#rClose")) closeRender(); });
+  drawRender(); }
+function closeRender(){ openR=null; $("#rSheet")?.remove(); }
+function drawRender(){ const body=$("#rBody"); if(!body) return;
+  const h=customs.find(c=>c.id===openR); if(!h){ closeRender(); return; }
+  const me=meP(), liked=!!(me&&h[me.field]), cm=commentsFor(h.id), day=t=>t?new Date(t).toLocaleDateString(undefined,{month:"short",day:"numeric"}):"";
+  const item=saves.find(x=>x.id===h.item), src=h.asset?blobUrl(h.asset):h.img;
+  body.innerHTML=`<h2>AI Render - See in our Space</h2>
+    <img class="rimg" src="${esc(src)}" alt="AI render" ${h.img?'referrerpolicy="no-referrer"':""} ${h.asset?`data-view="${esc(h.asset)}"`:`data-viewurl="${esc(h.img)}"`}>
+    <div class="rcap">${item?.note?esc(item.note)+" · ":""}${h.by?`Added by ${esc(h.by)} · `:""}${day(h.created)}</div>
+    <div class="actbar"><button class="pill" aria-pressed="${liked}" data-like-r="${esc(h.id)}" ${canWrite?"":"disabled"}>${THUMB}${liked?"Liked":"Like"}</button>${likedBy(h)?`<span class="likedby">${likedBy(h)}</span>`:""}</div>
+    <div class="cmts">${cm.map(c=>`<div class="cmt"><span class="ct"><b>${esc(c.by||"")}</b> ${esc(c.text)} <span class="cd">${day(c.created)}</span></span>${canWrite&&me&&c.by===me.name?`<button class="cx" data-delc="${esc(c.id)}" aria-label="Delete comment">×</button>`:""}</div>`).join("")}
+    ${canWrite?`<form class="cform" data-cfor="${esc(h.id)}"><input class="cin" maxlength="280" placeholder="Add a comment" aria-label="Add a comment" enterkeyhint="send" value="${esc(cDraft[h.id]||"")}"><button type="submit">Post</button></form>`:""}</div>
+    ${canWrite?`<button class="btn danger" id="rDel">Delete Render</button>`:""}<button class="btn" id="rClose">Close</button>`;
+  $("#rDel")?.addEventListener("click",async()=>{ closeRender();
+    try{ await db.collection("custom").doc(h.id).delete(); let undone=false;
+      toast("Render deleted",()=>{ undone=true; db.collection("custom").doc(h.id).set(stripId(h)).catch(()=>toast("Couldn’t restore it")); });
+      setTimeout(async()=>{ if(undone) return; if(h.asset) assets.delete(h.asset).catch(()=>{});
+        for(const c of customs.filter(c=>c.kind==="comment"&&c.item===h.id)) try{ await db.collection("custom").doc(c.id).delete(); }catch(_){} },6000); }
+    catch(_){ toast("Couldn’t delete. Try again."); } });
+}
+
+// ---------- comments ----------
+document.addEventListener("input",e=>{ const f=e.target.closest?.("[data-cfor]"); if(f) cDraft[f.dataset.cfor]=e.target.value; });
+document.addEventListener("submit",async e=>{ const f=e.target.closest("[data-cfor]"); if(!f) return; e.preventDefault();
+  const id=f.dataset.cfor, inp=f.querySelector(".cin"), text=inp.value.trim(); if(!text) return;
+  const me=meP(); if(!me) return askWho(()=>f.isConnected&&f.requestSubmit());
+  const btn=f.querySelector("button"); btn.disabled=true; inp.disabled=true; delete cDraft[id];
+  try{ await db.collection("custom").add({kind:"comment",item:id,by:me.name,text:text.slice(0,280),created:Date.now()}); inp.value=""; inp.blur(); toast("Comment posted"); redrawItems(); }
+  catch(err){ cDraft[id]=text; denied(err); btn.disabled=false; inp.disabled=false; toast("Couldn’t post. Try again."); }
+});
+// Redraw item lists without interrupting someone typing a comment.
+let heldDraw=false;
+function typingComment(){ return !!document.activeElement?.closest?.(".cform,#sForm"); }
+document.addEventListener("focusout",e=>{ if(e.target.closest?.(".cform,#sForm")) setTimeout(()=>{ if(heldDraw&&!typingComment()){ heldDraw=false; redrawItems(); } },0); });
+function redrawItems(){ if(typingComment()){ heldDraw=true; return; } render(); if(openId) drawSaveList(); if(openR) drawRender(); }
 
 // ---------- who is using this phone ----------
 function askWho(then){
@@ -999,7 +1091,7 @@ function refreshView(part){
   const s=SP.find(x=>x.id===openId); if(!s) return closeView();
   if($("#vh").textContent!==s.name){ $("#vh").textContent=s.name; $(".navtitle").textContent=s.name; }
   if(part!=="saves"&&!editM){ const cb=$("#cmpBox"); if(cb&&!cb.contains(document.activeElement)){ cb.innerHTML=cmpHtml(s); bindCmp(); } drawMeas(); }
-  if(part!=="meas"&&!editS) drawSaveList();
+  if(part!=="meas") drawSaveList();
   if(!part){ drawAddForm(); drawSpaceActs(); document.querySelectorAll(".cmp .u").forEach(u=>u.textContent=unit); }
 }
 function drawView(){
@@ -1155,18 +1247,28 @@ function drawAddForm(){
   if(!canWrite){ box.innerHTML=""; return; }
   if(box.dataset.ready===openId) return;
   box.dataset.ready=openId;
+  pendingImg=null;
   box.innerHTML=`<form class="form" id="addForm">
-      <input id="lnk" type="url" inputmode="url" placeholder="Paste a product link" autocomplete="off" aria-label="Product link">
+      <div class="linkrow"><button type="button" class="slot" id="aPic" aria-label="Add an image">${PICPLUS}Image</button>
+      <input id="lnk" type="url" inputmode="url" placeholder="Paste a product link" autocomplete="off" aria-label="Product link"></div>
       <div class="row2"><input id="nt" type="text" placeholder="Note: size, color" autocomplete="off" aria-label="Note"><input id="pr" type="text" inputmode="decimal" placeholder="$ Price" autocomplete="off" aria-label="Price"></div>
       <div class="btns"><button class="btn primary" type="submit" id="saveLink">Save Link</button>
       <label class="btn" for="ph" tabindex="0" ${assets?"":"hidden"}>Add Photo</label><input id="ph" type="file" accept="image/*" multiple hidden></div>
       <div class="status" id="st"></div></form>`;
+  $("#aPic").onclick=()=>pickImage({title:pendingImg?"Change Image":"Add an Image",hasImage:!!pendingImg,
+    onAdjust:()=>adjustImage({src:pendingImg.src,isUrl:!!pendingImg.source.url,crop:pendingImg.crop,saveLabel:"Done",onSave:async c=>{ pendingImg.crop=c; drawSlot(); }}),
+    onRemove:async()=>{ pendingImg=null; drawSlot(); },
+    done:source=>{ const src=srcOf(source); adjustImage({src,isUrl:!!source.url,crop:null,saveLabel:"Done",onSave:async c=>{ pendingImg={source,src,crop:c}; drawSlot(); }}); }});
   $("label[for=ph]")?.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); $("#ph").click(); }});
   $("#addForm").addEventListener("submit",async e=>{e.preventDefault(); const u=cleanUrl($("#lnk").value); const n=$("#nt").value.trim(); const p=parsePrice($("#pr").value);
-    if(!u&&!n){st("Paste a link first.",1);return;}
+    if(!u&&!n&&!pendingImg){st("Paste a link first.",1);return;}
     if(Number.isNaN(p)){st("Type the price as a number, like 249 or 249.99.",1);return;}
-    $("#saveLink").disabled=true; st("Saving…");
-    try{ await db.collection("saves").add({space:openId,url:u||null,note:n||null,price:p,created:Date.now()}); $("#lnk").value="";$("#nt").value="";$("#pr").value=""; st(""); toast("Link saved"); }
+    $("#saveLink").disabled=true; st(pendingImg?"Saving image…":"Saving…");
+    try{ const item={space:openId,url:u||null,note:n||null,price:p,created:Date.now()};
+      if(pendingImg){ item.crop=pendingImg.crop;
+        if(pendingImg.source.blob){ const small=await shrink(pendingImg.source.blob); const r=await assets.upload(small,{type:small.type||"image/jpeg"}); item.asset=r.id; }
+        else item.img=pendingImg.source.url; }
+      await db.collection("saves").add(item); $("#lnk").value="";$("#nt").value="";$("#pr").value=""; pendingImg=null; drawSlot(); st(""); toast(u?"Link saved":"Saved"); }
     catch(err){ denied(err); st(errMsg(err),1); }
     finally{ const b=$("#saveLink"); if(b) b.disabled=false; }
   });
@@ -1178,6 +1280,14 @@ function drawAddForm(){
     $("#nt").value=""; $("#pr").value=""; st(""); toast(files.length>1?"Photos saved":"Photo saved");
   });
 }
+let pendingImg=null;
+// The image square in the add form: the picked image with its adjustment, or the Add image box.
+function drawSlot(){ const b=$("#aPic"); if(!b) return;
+  if(!pendingImg){ b.className="slot"; b.innerHTML=PICPLUS+"Image"; b.setAttribute("aria-label","Add an image"); return; }
+  b.className="slot has"; b.setAttribute("aria-label","Change image");
+  b.innerHTML=`<img src="${esc(pendingImg.src)}" alt="" ${pendingImg.source.url?'referrerpolicy="no-referrer"':""}>`;
+  const im=b.querySelector("img"); const fit=()=>Object.assign(im.style,cropCss(pendingImg.crop,im.naturalWidth,im.naturalHeight));
+  if(im.complete&&im.naturalWidth) fit(); else im.onload=fit; }
 function cleanUrl(v){ v=String(v).trim(); if(!v) return ""; const m=v.match(/https?:\/\/\S+/i); if(m) return m[0]; return /^[\w-]+(\.[\w-]+)+/.test(v)?"https://"+v:v; }
 function drawSaveList(){
   const box=$("#saveList"); if(!box) return; if(!db){ box.innerHTML=""; return; }
@@ -1186,27 +1296,36 @@ function drawSaveList(){
   if(ob&&cur){ const others=saves.filter(x=>x.space!==openId&&SP.find(s=>s.id===x.space)?.room===cur.room);
     ob.innerHTML=others.length?`<h3 class="sec">Saved on other spaces in the ${esc(cur.room)}</h3><div class="group">${others.map(x=>saveRow(x,true)).join("")}</div>`:""; }
   const mine=saves.filter(x=>x.space===openId);
-  box.innerHTML=mine.map(x=>{
-    if(editS===x.id) return `<div class="save editing"><form class="form" id="sForm">
-      ${x.asset?`<div class="hint">Photo note</div>`:`<input id="eLnk" type="url" inputmode="url" value="${esc(x.url??"")}" placeholder="Product link" aria-label="Product link">`}
-      <div class="row2"><input id="eNt" type="text" value="${esc(x.note??"")}" placeholder="Note: size, color" aria-label="Note"><input id="ePr" type="text" inputmode="decimal" value="${hasPrice(x)?esc(String(x.price)):""}" placeholder="$ Price" aria-label="Price"></div>
-      <div class="btns"><button class="btn primary" type="submit">Save</button><button class="btn" type="button" id="sCancel">Cancel</button>${x.asset||x.img?`<button class="btn" type="button" data-crop-open="${esc(x.id)}">Adjust Image</button>`:""}${x.url?`<button class="btn" type="button" data-addpic="${esc(x.id)}">${x.asset||x.img?"Change Image":"Add Image"}</button>`:""}</div>
-      <div class="status" id="sSt"></div></form></div>`;
-    return saveRow(x,false);
-  }).join("")||`<div class="save"><div class="info"><div class="d">${storeReady?"Nothing saved for this space yet.":"Loading saved finds…"}</div></div></div>`;
+  box.innerHTML=mine.map(x=>saveRow(x,false)).join("")||`<div class="save"><div class="info"><div class="d">${storeReady?"Nothing saved for this space yet.":"Loading saved finds…"}</div></div></div>`;
   box.querySelectorAll(".pic img").forEach(img=>img.addEventListener("error",()=>{img.replaceWith(document.createTextNode("Missing"));}));
-  box.querySelectorAll("[data-edits]").forEach(b=>b.addEventListener("click",()=>{editS=b.dataset.edits;drawSaveList();($("#eLnk")||$("#eNt"))?.focus();}));
-  const f=$("#sForm"); if(!f) return;
-  $("#sCancel").onclick=()=>{editS=null;drawSaveList();};
-  f.addEventListener("submit",async e=>{e.preventDefault();
-    const p=parsePrice($("#ePr").value);
-    if(Number.isNaN(p)){ const s=$("#sSt"); if(s){s.textContent="Type the price as a number, like 249 or 249.99."; s.className="status err";} return; }
-    const patch={note:$("#eNt").value.trim()||null,price:p}; if($("#eLnk")) patch.url=cleanUrl($("#eLnk").value)||null;
-    const btn=f.querySelector("[type=submit]"); btn.disabled=true;
-    try{ await db.collection("saves").doc(editS).update(patch); editS=null; drawSaveList(); toast("Changes saved"); }
-    catch(err){ denied(err); btn.disabled=false; const s=$("#sSt"); if(s){s.textContent=errMsg(err); s.className="status err";} }
-  });
 }
+// ---------- edit an item (inside a space and on the To Buy and Purchased tabs) ----------
+function editCard(x){
+  const f=$("#sForm"), keep=f&&f.dataset.id===x.id?{l:$("#eLnk")?.value??"",n:$("#eNt")?.value??"",p:$("#ePr")?.value??""}:null;
+  const has=!!(x.asset||x.img);
+  const pic=x.asset?`<button type="button" class="pic" data-addpic="${esc(x.id)}" aria-label="Change image">${picImg(blobUrl(x.asset),x,"Item image")}</button>`
+    :x.img?`<button type="button" class="pic" data-addpic="${esc(x.id)}" aria-label="Change image">${picImg(x.img,x,"Item image",'referrerpolicy="no-referrer"')}</button>`
+    :`<button type="button" class="pic addpic" data-addpic="${esc(x.id)}" aria-label="Add an image">${PICPLUS}Add image</button>`;
+  return `<div class="save editing"><div class="edithead">${pic}<div><div class="t">Editing this item</div><div class="h">${has?"Tap the picture to change it":"Tap the box to add a picture"}</div></div></div><form class="form" id="sForm" data-id="${esc(x.id)}">
+    <input id="eLnk" type="url" inputmode="url" value="${esc(keep?keep.l:(x.url??""))}" placeholder="Product link" aria-label="Product link">
+    <div class="row2"><input id="eNt" type="text" value="${esc(keep?keep.n:(x.note??""))}" placeholder="Note: size, color" aria-label="Note"><input id="ePr" type="text" inputmode="decimal" value="${esc(keep?keep.p:(hasPrice(x)?String(x.price):""))}" placeholder="$ Price" aria-label="Price"></div>
+    <div class="btns"><button class="btn primary" type="submit">Save</button><button class="btn" type="button" id="sCancel">Cancel</button>${has?`<button class="btn" type="button" data-crop-open="${esc(x.id)}">Adjust Image</button>`:""}</div>
+    <div class="status" id="sSt"></div></form></div>`;
+}
+function redrawEdit(){ render(); if(openId) drawSaveList(); }
+document.addEventListener("click",e=>{
+  const ed=e.target.closest("[data-edits]");
+  if(ed){ editS=ed.dataset.edits; redrawEdit(); ($("#eNt")||$("#eLnk"))?.focus(); return; }
+  if(e.target.closest("#sCancel")){ editS=null; redrawEdit(); }
+});
+document.addEventListener("submit",async e=>{ const f=e.target.closest("#sForm"); if(!f) return; e.preventDefault();
+  const id=f.dataset.id, p=parsePrice($("#ePr").value), msg=m=>{ const s=$("#sSt"); if(s){s.textContent=m; s.className="status err";} };
+  if(Number.isNaN(p)) return msg("Type the price as a number, like 249 or 249.99.");
+  const patch={note:$("#eNt").value.trim()||null,price:p,url:cleanUrl($("#eLnk").value)||null};
+  const btn=f.querySelector("[type=submit]"); btn.disabled=true;
+  try{ await db.collection("saves").doc(id).update(patch); editS=null; document.activeElement?.blur?.(); redrawEdit(); toast("Changes saved"); }
+  catch(err){ denied(err); btn.disabled=false; msg(errMsg(err)); }
+});
 function st(msg,err){const e=$("#st"); if(e){e.textContent=msg; e.className="status"+(err?" err":"");}}
 async function shrink(file){
   try{
