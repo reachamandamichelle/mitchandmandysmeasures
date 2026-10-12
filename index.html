@@ -18,7 +18,7 @@
    Rooms are inset groups of rows; a row pushes a full-screen detail view with measurements, a size compare, and saved finds. */
 :root{
   --bg:#f2f2f7; --surface:#ffffff; --fill:#e9e9ee; --ink:#111113; --muted:#6c6c72; --sep:rgba(60,60,67,.16);
-  --accent:#0a6cdf; --tape:#f5c518; --tape-ink:#2a2200; --good:#1f7a36; --good-bg:#e3f4e7; --bad:#c4161c; --bad-bg:#fbe5e5;
+  --accent:#0a6cdf; --tape:#2f3e35; --tape-ink:#f4f1ea; --mark:#dfe7da; --good:#1f7a36; --good-bg:#e3f4e7; --bad:#c4161c; --bad-bg:#fbe5e5;
   --bar:#f2f2f7; --scrim:rgba(0,0,0,.35); --toast:#1c1c1e; --toast-ink:#ffffff;
   --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",system-ui,"Segoe UI",Roboto,sans-serif;
   --display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",system-ui,"Segoe UI",Roboto,sans-serif;
@@ -26,11 +26,11 @@
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#000000; --surface:#1c1c1e; --fill:#2c2c2e; --ink:#f5f5f7; --muted:#9a9aa1; --sep:rgba(84,84,88,.55);
-  --accent:#3b9bff; --tape:#f5c518; --tape-ink:#2a2200; --good:#4cd471; --good-bg:#12301b; --bad:#ff6961; --bad-bg:#3a1414;
+  --accent:#3b9bff; --tape:#b9c2b4; --tape-ink:#1c2620; --mark:#3a4a40; --good:#4cd471; --good-bg:#12301b; --bad:#ff6961; --bad-bg:#3a1414;
   --bar:#000000; --scrim:rgba(0,0,0,.55); --toast:#f5f5f7; --toast-ink:#111113; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#000000; --surface:#1c1c1e; --fill:#2c2c2e; --ink:#f5f5f7; --muted:#9a9aa1; --sep:rgba(84,84,88,.55);
-  --accent:#3b9bff; --tape:#f5c518; --tape-ink:#2a2200; --good:#4cd471; --good-bg:#12301b; --bad:#ff6961; --bad-bg:#3a1414;
+  --accent:#3b9bff; --tape:#b9c2b4; --tape-ink:#1c2620; --mark:#3a4a40; --good:#4cd471; --good-bg:#12301b; --bad:#ff6961; --bad-bg:#3a1414;
   --bar:#000000; --scrim:rgba(0,0,0,.55); --toast:#f5f5f7; --toast-ink:#111113; color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.35;padding-inline:16px;padding-block:0 96px;-webkit-font-smoothing:antialiased}
@@ -81,9 +81,24 @@ header.compact h1{font-size:19px;margin-top:0}
 .chev{flex:none;width:8px;height:13px;color:var(--muted);opacity:.6}
 .row.add{color:var(--accent);font-weight:500;min-height:46px}
 .recents{margin-top:4px}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px}
+@media (min-width:600px){.tiles{grid-template-columns:repeat(3,1fr)}}
+.tile{border:0;background:var(--surface);border-radius:16px;padding:16px 14px 14px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:12px;min-height:128px;position:relative;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.tile:active{transform:scale(.98);background:var(--fill)}
+.tile .ic{width:44px;height:44px;border-radius:12px;background:var(--fill);display:grid;place-items:center;color:var(--ink)}
+.tile .ic svg{width:26px;height:26px}
+.tile .tx{margin-top:auto;display:block}
+.tile .nm{display:block;font-size:17px;font-weight:600;line-height:1.2}
+.tile .ct{display:block;font-size:13px;color:var(--muted);margin-top:2px}
+.tile .badge{position:absolute;top:14px;right:14px}
+.back{border:0;background:transparent;color:var(--accent);font-size:17px;display:inline-flex;align-items:center;gap:6px;padding:12px 0 0;cursor:pointer;min-height:44px}
+.back svg{width:10px;height:17px}
+.roomhead{font-family:var(--display);font-size:32px;font-weight:700;line-height:1.1;margin:4px 0 2px}
+.roomsub{font-size:15px;color:var(--muted);margin:0 0 14px}
+.chips[hidden]{display:none}
 .empty{color:var(--muted);text-align:center;padding:48px 16px;font-size:15px}
 .empty b{display:block;color:var(--ink);font-size:20px;margin-bottom:6px}
-mark{background:var(--tape);color:var(--tape-ink);border-radius:3px;padding:0 1px}
+mark{background:var(--mark);color:var(--ink);border-radius:3px;padding:0 1px}
 
 /* detail view */
 .scrim{position:fixed;inset:0;background:var(--scrim);z-index:20;display:flex;justify-content:center}
@@ -170,7 +185,7 @@ h3.sec{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:.0
 .buy[disabled]{cursor:default}
 .save.isbought .d .tag{color:var(--good);font-weight:600}
 .price{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
-.totals{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 4px}
+.totals{display:grid;grid-template-columns:1fr;gap:10px;margin:12px 0 4px}
 .totals div{background:var(--surface);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
 .totals b{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink)}
 .totals span{font-size:13px;color:var(--muted)}
@@ -181,6 +196,26 @@ h3.sec{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:.0
 .tabs .n{color:var(--muted);font-weight:500}
 .save .where{border:0;background:transparent;padding:0;color:var(--accent);font-size:13px;cursor:pointer;text-align:left}
 .save.editing{display:block;padding:0}
+.save .pic.addpic{cursor:pointer;color:var(--accent);flex-direction:column;gap:2px;font-size:11px;font-weight:600;border:1.5px dashed var(--sep)}
+.save .pic.addpic svg{width:22px;height:22px}
+.sheetbg{position:fixed;inset:0;z-index:45;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:520px;background:var(--surface);border-radius:16px 16px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));display:grid;gap:12px}
+@media (min-width:760px){.sheetbg{align-items:center}.sheet{border-radius:16px}}
+.sheet h2{font-family:var(--display);font-size:22px;margin:0}
+.sheet p{margin:0;color:var(--muted);font-size:14px}
+.pastebox{min-height:64px;border:1.5px dashed var(--sep);border-radius:12px;padding:12px;font-size:16px;color:var(--muted);background:var(--fill);outline:none;overflow:hidden;word-break:break-all}
+.pastebox:focus{border-color:var(--accent);color:var(--ink)}
+.sheet .btn{justify-content:center}
+.sheet .prev{width:100%;max-height:200px;object-fit:contain;border-radius:10px;background:var(--fill)}
+.likes{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap}
+.like{border:0;background:var(--fill);color:var(--ink);border-radius:999px;display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;padding:5px 11px 5px 9px;cursor:pointer;min-height:30px}
+.like svg{width:16px;height:16px}
+.like[aria-pressed="true"]{background:var(--tape);color:var(--tape-ink)}
+.like[disabled]{cursor:default;opacity:.5}
+.likedby{font-size:13px;color:var(--muted)}
+.likedby b{color:var(--ink);font-weight:600}
+.who{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.who .btn{justify-content:center;font-size:17px;min-height:52px}
 .viewer{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:16px;cursor:zoom-out}
 .viewer img{max-height:100%;max-width:100%;border-radius:10px}
 .gate{position:fixed;inset:0;z-index:60;background:var(--bg);display:grid;place-items:center;padding:24px 16px}
@@ -191,7 +226,7 @@ h3.sec{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:.0
 .gatebox input:focus{box-shadow:0 0 0 2px var(--accent)}
 .gatebox .btn{justify-content:center}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:50;background:var(--toast);color:var(--toast-ink);border-radius:14px;padding:10px 10px 10px 16px;display:flex;align-items:center;gap:14px;font-size:15px;font-weight:500;box-shadow:0 8px 30px rgba(0,0,0,.25);max-width:calc(100% - 32px)}
-.toast button{border:0;background:transparent;color:var(--tape);font-weight:700;font-size:15px;padding:6px 8px;cursor:pointer}
+.toast button{border:0;background:transparent;color:var(--toast-ink);text-decoration:underline;font-weight:700;font-size:15px;padding:6px 8px;cursor:pointer}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media (prefers-reduced-motion:no-preference){
   .view{animation:push .26s cubic-bezier(.2,.8,.2,1)}
@@ -343,6 +378,26 @@ const ls={get(k){try{return localStorage.getItem(k)}catch(_){return null}},set(k
 const CHEV='<svg class="chev" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m1.5 1.5 5 5-5 5"/></svg>';
 const BACK='<svg viewBox="0 0 11 19" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2 2 9.5 9 17"/></svg>';
 const BAG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1.2 12H6.2z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>';
+// Room tile icons (simple line drawings).
+const RI=p=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const ROOM_ICON={
+  sofa:RI('<path d="M4 11V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3"/><path d="M2 13a2 2 0 0 1 4 0v2h12v-2a2 2 0 0 1 4 0v4a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z"/><path d="M5 18v2M19 18v2"/>'),
+  kitchen:RI('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 10h16M8 6.5h.01M8 14v3"/>'),
+  door:RI('<path d="M6 21V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17M3 21h18"/><circle cx="14.5" cy="12" r=".6" fill="currentColor"/>'),
+  loft:RI('<path d="M3 21h4v-4h4v-4h4V9h4V5h2"/>'),
+  hall:RI('<path d="M9 3h6l3 18H6z"/><path d="M12 7v2M12 12v2M12 17v2"/>'),
+  bath:RI('<path d="M3 12h18v3a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5z"/><path d="M6 12V5a2 2 0 0 1 4 0M7 20l-1 2M17 20l1 2"/>'),
+  bed:RI('<path d="M3 19V6M3 15h18v4M21 15v-3a3 3 0 0 0-3-3h-7v6"/><circle cx="7" cy="11" r="2"/>'),
+  closet:RI('<path d="M12 6a2 2 0 1 1 2 2c-1 0-2 .7-2 1.6V10"/><path d="M12 10 3 17a1 1 0 0 0 .6 1.8h16.8A1 1 0 0 0 21 17z"/>')
+};
+function roomIcon(n){ n=n.toLowerCase();
+  return ROOM_ICON[/living/.test(n)?"sofa":/kitchen/.test(n)?"kitchen":/entry/.test(n)?"door":/loft/.test(n)?"loft":/hall/.test(n)?"hall":/bath/.test(n)?"bath":/closet/.test(n)?"closet":"bed"]; }
+const THUMB='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10v11H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z"/><path d="M7 10l4-7a2.5 2.5 0 0 1 2.6 3L13 10h5.5a2 2 0 0 1 2 2.3l-1.2 7A2 2 0 0 1 17.3 21H7"/></svg>';
+// Likes: each person's thumbs up is its own field, so both phones can like the same item at the same time.
+const PEOPLE=[{name:"Amanda",field:"likeAmanda"},{name:"Mitch",field:"likeMitch"}];
+const meP=()=>PEOPLE.find(p=>p.name===ls.get("hm-me"));
+function likedBy(x){ const n=PEOPLE.filter(p=>x[p.field]).map(p=>p.name); return n.length===2?"<b>Amanda</b> and <b>Mitch</b> liked":n.length?`<b>${n[0]}</b> liked`:""; }
+const PICPLUS='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-8 9"/></svg>';
 const CHECK='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3.5 8.5 3 3 6-7"/></svg>';
 const LINKIC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></svg>';
 
@@ -417,14 +472,15 @@ $("#uIn").onclick=()=>{unit="in";ls.set("hm-unit",unit);units();render();refresh
 $("#uCm").onclick=()=>{unit="cm";ls.set("hm-unit",unit);units();render();refreshView();};
 addEventListener("scroll",()=>$("#top").classList.toggle("compact",scrollY>24),{passive:true});
 function chips(){
-  $("#chips").innerHTML=["All",...ROOMS,"Saved"].map(r=>`<button class="chip" aria-pressed="${r===room}" data-r="${esc(r)}">${esc(r==="Saved"?"Has saved finds":r)}</button>`).join("");
+  $("#chips").innerHTML=["All",...ROOMS].map(r=>`<button class="chip" aria-pressed="${r===room}" data-r="${esc(r)}">${esc(r)}</button>`).join("");
 }
 $("#chips").addEventListener("click",e=>{const b=e.target.closest(".chip"); if(!b) return; room=b.dataset.r; ls.set("hm-room",room); chips(); render(); window.scrollTo({top:0});});
 
 function tabs(){ $("#tSpaces").setAttribute("aria-selected",tab==="spaces"); $("#tToBuy").setAttribute("aria-selected",tab==="tobuy"); $("#tBought").setAttribute("aria-selected",tab==="bought");
   const n=saves.filter(x=>x.purchased).length, t=saves.length-n;
-  $("#boughtN").textContent=n?`(${n})`:""; $("#toBuyN").textContent=t?`(${t})`:""; }
-[["#tSpaces","spaces"],["#tToBuy","tobuy"],["#tBought","bought"]].forEach(([sel,v])=>$(sel).onclick=()=>{tab=v;ls.set("hm-tab",tab);tabs();render();window.scrollTo({top:0});});
+  $("#boughtN").textContent=n?`(${n})`:""; $("#toBuyN").textContent=t?`(${t})`:"";
+  $("#chips").hidden=tab==="spaces"; }
+[["#tSpaces","spaces"],["#tToBuy","tobuy"],["#tBought","bought"]].forEach(([sel,v])=>$(sel).onclick=()=>{ if(tab!==v){ room="All"; chips(); } tab=v;ls.set("hm-tab",tab);tabs();render();window.scrollTo({top:0});});
 
 // ---------- prices ----------
 // Prices are saved as plain numbers in dollars. "$1,299.99", "1299.99" and "1,299" all become 1299.99 or 1299.
@@ -435,8 +491,12 @@ function sumOf(list){ const priced=list.filter(hasPrice); return {total:Math.rou
 
 // ---------- saved item row (shared by a space and the Purchased tab) ----------
 function spaceTitle(id){ const s=SP.find(x=>x.id===id); return s?(s.group?s.group+" · ":"")+s.name:"Deleted space"; }
+function likeHtml(x){ const me=meP(), on=!!(me&&x[me.field]);
+  return `<div class="likes"><button class="like" aria-pressed="${on}" data-like="${esc(x.id)}" ${canWrite?"":"disabled"} aria-label="${on?"Unlike":"Like"}">${THUMB}${on?"Liked":"Like"}</button>${likedBy(x)?`<span class="likedby">${likedBy(x)}</span>`:""}</div>`; }
 function saveRow(x,inBought){
-  const pic=x.asset?`<button class="pic" data-view="${esc(x.asset)}" aria-label="View photo"><img src="${esc(blobUrl(x.asset))}" alt="Saved photo" loading="lazy"></button>`:`<div class="pic linkic">${LINKIC}</div>`;
+  const pic=x.asset?`<button class="pic" data-view="${esc(x.asset)}" aria-label="View photo"><img src="${esc(blobUrl(x.asset))}" alt="Saved photo" loading="lazy"></button>`
+    :x.img?`<button class="pic" data-viewurl="${esc(x.img)}" aria-label="View image"><img src="${esc(x.img)}" alt="Item image" loading="lazy" referrerpolicy="no-referrer"></button>`
+    :canWrite?`<button class="pic addpic" data-addpic="${esc(x.id)}" aria-label="Add an image">${PICPLUS}Add image</button>`:`<div class="pic linkic">${LINKIC}</div>`;
   let host=""; if(x.url){try{host=new URL(x.url).hostname.replace(/^www\./,"")}catch(_){host=x.url}}
   const day=t=>t?new Date(t).toLocaleDateString(undefined,{month:"short",day:"numeric"}):"";
   const safe=x.url&&/^https?:/i.test(x.url);
@@ -444,17 +504,26 @@ function saveRow(x,inBought){
   const pr=hasPrice(x)?`<span class="price">${money(x.price)}</span> · `:"";
   const meta=inBought
     ? `<button class="where" data-open="${esc(x.space)}">${esc(spaceTitle(x.space))}</button><div class="d">${pr}${x.purchased?`<span class="tag">Purchased</span>${x.purchasedAt?" "+day(x.purchasedAt):""}`:`${hasPrice(x)?"":"No price · "}saved ${day(x.created)}`}</div>`
-    : `<div class="d">${pr}${x.purchased?`<span class="tag">Purchased</span>${x.purchasedAt?" "+day(x.purchasedAt):""} · `:""}${x.asset?"Photo":"Link"} · saved ${day(x.created)}</div>`;
-  return `<div class="save${x.purchased?" isbought":""}">${buy}${pic}<div class="info">${x.url?(safe?`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(host)}</a>`:`<div class="n">${esc(x.url)}</div>`):""}${x.note?`<div class="n">${esc(x.note)}</div>`:""}${meta}</div>${canWrite&&!inBought?`<div class="acts"><button class="link" data-edits="${esc(x.id)}">Edit</button><button class="link danger" data-del="${esc(x.id)}">Delete</button></div>`:""}</div>`;
+    : `<div class="d">${pr}${x.purchased?`<span class="tag">Purchased</span>${x.purchasedAt?" "+day(x.purchasedAt):""} · `:""}${x.url?"Link":"Photo"} · saved ${day(x.created)}</div>`;
+  return `<div class="save${x.purchased?" isbought":""}">${buy}${pic}<div class="info">${x.url?(safe?`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(host)}</a>`:`<div class="n">${esc(x.url)}</div>`):""}${x.note?`<div class="n">${esc(x.note)}</div>`:""}${meta}${likeHtml(x)}</div>${canWrite&&!inBought?`<div class="acts"><button class="link" data-edits="${esc(x.id)}">Edit</button><button class="link danger" data-del="${esc(x.id)}">Delete</button></div>`:""}</div>`;
 }
 // Checkmarks, photo viewer and "go to space" work the same everywhere.
 document.addEventListener("click",async e=>{
+  const lk=e.target.closest("[data-like]");
+  if(lk&&canWrite&&db){ const me=meP(); if(!me) return askWho(()=>lk.isConnected&&lk.click());
+    const x=saves.find(s=>s.id===lk.dataset.like); if(!x) return; const now=!x[me.field];
+    lk.disabled=true;
+    try{ await db.collection("saves").doc(x.id).update({[me.field]:now}); }
+    catch(err){ denied(err); toast("Couldn’t update. Try again."); }
+    finally{ if(lk.isConnected) lk.disabled=false; } return; }
   const b=e.target.closest("[data-buy]");
   if(b&&canWrite&&db){ const x=saves.find(s=>s.id===b.dataset.buy); if(!x) return; const now=!x.purchased;
     b.setAttribute("aria-checked",now); b.disabled=true;
     try{ await db.collection("saves").doc(x.id).update({purchased:now,purchasedAt:now?Date.now():null}); toast(now?"Marked purchased":"Marked not purchased"); }
     catch(err){ b.setAttribute("aria-checked",!now); denied(err); toast("Couldn’t update. Try again."); }
     finally{ b.disabled=!canWrite; } return; }
+  const ap=e.target.closest("[data-addpic]"); if(ap&&canWrite&&db) return openPicSheet(ap.dataset.addpic);
+  const vu=e.target.closest("[data-viewurl]"); if(vu){ const el=document.createElement("div"); el.className="viewer"; el.innerHTML=`<img src="${esc(vu.dataset.viewurl)}" alt="Item image" referrerpolicy="no-referrer">`; el.onclick=()=>el.remove(); document.body.appendChild(el); return; }
   const v=e.target.closest("[data-view]");
   if(v){ const el=document.createElement("div"); el.className="viewer"; el.innerHTML=`<img src="${esc(blobUrl(v.dataset.view))}" alt="Saved photo">`; el.onclick=()=>el.remove(); document.body.appendChild(el); return; }
   const o=e.target.closest("[data-open]");
@@ -469,15 +538,15 @@ function renderBought(){
     .filter(({x,s})=>{ if(!words.length) return true; const hay=" "+norm([s?.room,s?.group,s?.name,x.note,x.url].filter(Boolean).join(" ")).join(" "); return words.every(w=>hay.includes(" "+w)||(SYN[w]&&hay.includes(" "+SYN[w]))); });
   const items=inView.filter(({x})=>!!x.purchased===done)
     .sort((a,b)=>done?(b.x.purchasedAt||0)-(a.x.purchasedAt||0):(b.x.created||0)-(a.x.created||0));
-  const spent=sumOf(inView.filter(({x})=>x.purchased).map(({x})=>x)), left=sumOf(inView.filter(({x})=>!x.purchased).map(({x})=>x));
+  // Totals count purchased items only.
+  const spent=sumOf(items.map(({x})=>x));
   const where=room==="All"||room==="Saved"?"":` in ${room}`;
-  const noP=n=>n?`${n} without a price`:"";
-  let html=inView.length?`<div class="totals"><div><span>Spent${esc(where)}</span><b>${money(spent.total)}</b><span>${noP(spent.missing)||"&nbsp;"}</span></div><div><span>Still to buy${esc(where)}</span><b>${money(left.total)}</b><span>${noP(left.missing)||"&nbsp;"}</span></div></div>`:"";
+  let html=done&&items.length?`<div class="totals"><div><span>Total spent${esc(where)}</span><b>${money(spent.total)}</b>${spent.missing?`<span>${spent.missing} purchased ${spent.missing===1?"item has":"items have"} no price</span>`:""}</div></div>`:"";
   let groups="";
   [...ROOMS,null].forEach(rn=>{
     const list=items.filter(({s})=>rn?s?.room===rn:!s); if(!list.length) return;
     const t=sumOf(list.map(({x})=>x));
-    const sub=`${list.length} ${done?"purchased":list.length===1?"item":"items"} · ${money(t.total)}${done?" spent":""}${t.missing?` · ${t.missing} without a price`:""}`;
+    const sub=done?`${list.length} purchased · ${money(t.total)} spent${t.missing?` · ${t.missing} without a price`:""}`:`${list.length} ${list.length===1?"item":"items"} to buy`;
     groups+=`<section><div class="sechead">${esc(rn||"Other")}<span>${sub}</span></div><div class="group">${list.map(({x})=>saveRow(x,true)).join("")}</div></section>`;
   });
   if(!groups) groups=q?`<div class="empty"><b>No ${done?"purchased":"unpurchased"} items match “${esc(q)}”</b></div>`
@@ -490,8 +559,8 @@ function renderBought(){
 
 // ---------- list ----------
 function rowHtml(s){
-  if(s.shop){ const c=counts[s.id]||0;
-    return `<button class="row shop" data-id="${esc(s.id)}"><span class="shopic">${BAG}</span><span class="body"><span class="ttl">${hl(s.name)}</span><span class="sub">${c?`${c} saved ${c===1?"item":"items"}${bought[s.id]?` · ${bought[s.id]} purchased`:""}`:`Links and photos for this room`}</span></span>${c?`<span class="badge" aria-label="${c} saved">${c}</span>`:""}${CHEV}</button>`; }
+  if(s.shop){ const inRoom=saves.filter(x=>SP.find(p=>p.id===x.space)?.room===s.room), c=inRoom.length, nb=inRoom.filter(x=>x.purchased).length;
+    return `<button class="row shop" data-id="${esc(s.id)}"><span class="shopic">${BAG}</span><span class="body"><span class="ttl">${hl(s.name)}</span><span class="sub">${c?`${c} saved ${c===1?"item":"items"}${nb?` · ${nb} purchased`:""}`:`Links and photos for this room`}</span></span>${c?`<span class="badge" aria-label="${c} saved">${c}</span>`:""}${CHEV}</button>`; }
   const peek=s.m.slice(0,3).map(([l,v,suf])=>{const f=fmt(v);return `${hl(l)} <b>${f.html}</b>${suf?" "+esc(suf):""}`}).join(" · ")||"No measurements yet";
   const ph=firstPhoto[s.id];
   return `<button class="row${ph?" hasthumb":""}" data-id="${esc(s.id)}">${ph?`<img class="thumb" src="${esc(blobUrl(ph))}" alt="" loading="lazy">`:""}<span class="body">${s.group?`<span class="grp">${hl(s.group)}</span>`:""}<span class="ttl">${hl(s.name)}</span><span class="sub num">${peek}</span></span>${counts[s.id]?`<span class="badge" aria-label="${counts[s.id]} saved">${counts[s.id]}</span>`:""}${CHEV}</button>`;
@@ -500,26 +569,41 @@ function render(){
   tabs();
   if(tab!=="spaces") return renderBought();
   const words=norm(q);
-  const list=search(SP.filter(s=>room==="All"||room===s.room||(room==="Saved"&&counts[s.id])),words);
-  const showAdd=canWrite&&!q&&room!=="Saved";
   let html="";
-  const rec=!q&&room==="All"?recents.map(id=>SP.find(s=>s.id===id)).filter(Boolean).slice(0,3):[];
-  if(rec.length) html+=`<section><div class="sechead small">Recently Viewed</div><div class="group recents">${rec.map(rowHtml).join("")}</div></section>`;
-  const rooms=room==="All"||room==="Saved"?ROOMS:[room];
-  rooms.forEach(rn=>{
-    const items=list.filter(s=>s.room===rn);
-    if(!items.length&&!(showAdd&&room===rn)) return;
-    const view=H.find(h=>h.room===rn).view;
-    html+=`<section><div class="sechead">${esc(rn)}${view&&!q?`<span>Viewpoint: ${esc(view)}</span>`:""}</div><div class="group">${items.map(rowHtml).join("")}${showAdd?`<button class="row add" data-addspace="${esc(rn)}">Add Space</button>`:""}</div></section>`;
-  });
-  if(!list.length&&!showAdd) html=room==="Saved"&&!q?`<div class="empty"><b>No saved finds yet</b>Open a space and save a link or photo.</div>`:`<div class="empty"><b>No results for “${esc(q)}”</b>Try a room or object, like closet, window or rug.</div>`;
-  if(!q&&room==="All"&&started) html+=backupHtml();
+  // Home: one tile per room.
+  if(!q&&room==="All"){
+    html+=`<div class="tiles">${ROOMS.map(rn=>{
+      const sp=SP.filter(s=>s.room===rn&&!s.shop), shop=SP.find(s=>s.room===rn&&s.shop);
+      const toBuy=saves.filter(x=>!x.purchased&&SP.find(s=>s.id===x.space)?.room===rn).length;
+      return `<button class="tile" data-room="${esc(rn)}"><span class="ic">${roomIcon(rn)}</span>${toBuy?`<span class="badge" aria-label="${toBuy} to buy">${toBuy}</span>`:""}<span class="tx"><span class="nm">${esc(rn)}</span><span class="ct">${sp.length} ${sp.length===1?"space":"spaces"}</span></span></button>`;
+    }).join("")}</div>`;
+    const rec=recents.map(id=>SP.find(s=>s.id===id)).filter(Boolean).slice(0,3);
+    if(rec.length) html+=`<section><div class="sechead small">Recently Viewed</div><div class="group recents">${rec.map(rowHtml).join("")}</div></section>`;
+    if(started) html+=backupHtml();
+  }
+  // One room: only that room's spaces.
+  else if(!q){
+    const items=SP.filter(s=>s.room===room), view=H.find(h=>h.room===room)?.view;
+    html+=`<button class="back" data-home>${BACK}All Rooms</button><div class="roomhead">${esc(room)}</div>${view?`<p class="roomsub">Viewpoint: ${esc(view)}</p>`:`<p class="roomsub"></p>`}
+      <div class="group">${items.map(rowHtml).join("")}${canWrite?`<button class="row add" data-addspace="${esc(room)}">Add Space</button>`:""}</div>`;
+  }
+  // Search: matching spaces across every room.
+  else {
+    const list=search(SP,words);
+    ROOMS.forEach(rn=>{
+      const items=list.filter(s=>s.room===rn); if(!items.length) return;
+      html+=`<section><div class="sechead">${esc(rn)}</div><div class="group">${items.map(rowHtml).join("")}</div></section>`;
+    });
+    if(!list.length) html=`<div class="empty"><b>No results for “${esc(q)}”</b>Try a room or object, like closet, window or rug.</div>`;
+  }
   $("#out").innerHTML=html;
   $("#out").querySelectorAll(".thumb").forEach(i=>i.addEventListener("error",()=>i.remove()));
 }
 $("#out").addEventListener("click",e=>{
   const c=e.target.closest(".row[data-id]"); if(c) return openView(c.dataset.id);
-  const a=e.target.closest("[data-addspace]"); if(a) openSpaceForm(a.dataset.addspace);
+  const a=e.target.closest("[data-addspace]"); if(a) return openSpaceForm(a.dataset.addspace);
+  const t=e.target.closest(".tile[data-room]"); if(t){ room=t.dataset.room; chips(); render(); window.scrollTo({top:0}); return; }
+  if(e.target.closest("[data-home]")){ room="All"; chips(); render(); window.scrollTo({top:0}); }
 });
 function onSearch(){ const v=$("#q").value.trim(); if(v===q) return; q=v; $("#clear").hidden=!q;
   if(q&&room!=="All"){ room="All"; chips(); }
@@ -534,7 +618,7 @@ $("#clear").onclick=()=>{$("#q").value="";onSearch();$("#q").focus();};
 // data.json holds the items and photos/ holds the pictures. Each phone connects once with the
 // repository name and an access key, which stay on that phone.
 const mem={saves:{},custom:{}}; const listeners={saves:[],custom:[]}; const URLS={}; const loadingPhoto={};
-let GH=null, started=false, dataEtag=null, pollT=null;
+let GH=null, started=false, dataEtag=null, pollT=null, lastV=0;
 try{ GH=JSON.parse(localStorage.getItem("hm-gh")||"null"); }catch(_){}
 const clone=o=>JSON.parse(JSON.stringify(o));
 const newId=n=>{ const a=new Uint8Array(n||10); crypto.getRandomValues(a); return [...a].map(b=>b.toString(16).padStart(2,"0")).join(""); };
@@ -557,8 +641,8 @@ async function loadPhoto(id){
   }finally{ loadingPhoto[id]=false; }
 }
 function emit(c){ listeners[c].forEach(({fn,dir})=>{ const docs=Object.entries(mem[c]).sort((a,b)=>((a[1].created||0)-(b[1].created||0))*(dir==="desc"?-1:1)).map(([id,d])=>({id,exists:true,data:()=>d})); fn({docs}); }); }
-function cacheSave(){ try{ localStorage.setItem("hm-cache",JSON.stringify(mem)); }catch(_){} }
-function cacheLoad(){ try{ const c=JSON.parse(localStorage.getItem("hm-cache")||"null"); if(c){ mem.saves=c.saves||{}; mem.custom=c.custom||{}; } }catch(_){} }
+function cacheSave(){ try{ localStorage.setItem("hm-cache",JSON.stringify({...mem,v:lastV})); }catch(_){} }
+function cacheLoad(){ try{ const c=JSON.parse(localStorage.getItem("hm-cache")||"null"); if(c){ mem.saves=c.saves||{}; mem.custom=c.custom||{}; lastV=c.v||0; } }catch(_){} }
 // Read data.json. Returns {sha, data} or null when nothing has changed since the last read.
 async function readData(force){
   const r=await gh("/contents/data.json",{headers:(!force&&dataEtag)?{"If-None-Match":dataEtag}:{}});
@@ -572,13 +656,16 @@ async function readData(force){
   const data=JSON.parse(text||"{}"); data.saves=data.saves||{}; data.custom=data.custom||{};
   return {sha:j.sha,data};
 }
-function applyData(data){ mem.saves=data.saves; mem.custom=data.custom; cacheSave(); emit("saves"); emit("custom"); }
+// Every save raises data.json's version number. GitHub can briefly hand back the copy from before a save,
+// so a copy older than the newest one this phone has seen is ignored instead of hiding new items.
+function applyData(data,mine){ const v=data.v||0; if(!mine&&v<lastV) return; lastV=Math.max(lastV,v);
+  mem.saves=data.saves; mem.custom=data.custom; cacheSave(); emit("saves"); emit("custom"); }
 // Apply one change on top of the latest saved copy, so two phones saving at once don't overwrite each other.
 async function writeOp(op,message){
   for(let i=0;i<5;i++){
-    const cur=await readData(true); op(cur.data);
+    const cur=await readData(true); op(cur.data); cur.data.v=Math.max(cur.data.v||0,lastV)+1;
     const r=await gh("/contents/data.json",{method:"PUT",body:JSON.stringify({message,content:b64FromText(JSON.stringify(cur.data,null,1)),...(cur.sha?{sha:cur.sha}:{})})});
-    if(r.ok){ dataEtag=null; applyData(cur.data); return; }
+    if(r.ok){ dataEtag=null; applyData(cur.data,true); return; }
     if(r.status!==409&&r.status!==422) throw {code:"save_failed",status:r.status};
     await new Promise(res=>setTimeout(res,300+Math.random()*500));
   }
@@ -628,9 +715,76 @@ function startData(){
   document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") loadAll(); });
   pollT=setInterval(()=>{ if(document.visibilityState==="visible") loadAll(); },20000);
   render(); refreshView();
+  if(!meP()) askWho();
 }
 async function initStore(){
   if(GH?.repo&&GH?.token){ cacheLoad(); hideGate(); startData(); } else showGate("connect");
+}
+
+// ---------- add an image to a saved link ----------
+// The image is either pasted (saved as a photo in your private repository) or an image web address (shown straight from the store).
+function openPicSheet(id){
+  const x=saves.find(s=>s.id===id); if(!x) return;
+  $("#picSheet")?.remove();
+  const g=document.createElement("div"); g.id="picSheet"; g.className="sheetbg";
+  g.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-label="Add an image">
+    <h2>${x.asset||x.img?"Change image":"Add an image"}</h2>
+    <p>On the store’s page, press and hold the product picture and tap <b>Copy</b>. Then come back here and tap <b>Paste Image</b>.</p>
+    <button class="btn primary" id="pPaste">Paste Image</button>
+    <div class="pastebox" id="pBox" contenteditable="true" role="textbox" aria-label="Paste an image or image address">Or tap here and paste the image or its web address</div>
+    <label class="btn" for="pFile" tabindex="0">Choose from Photos</label><input id="pFile" type="file" accept="image/*" hidden>
+    ${x.asset||x.img?`<button class="btn danger" id="pRemove">Remove Image</button>`:""}
+    <button class="btn" id="pCancel">Cancel</button>
+    <div class="status" id="pSt"></div></div>`;
+  document.body.appendChild(g);
+  const st=(m,err)=>{ const e=$("#pSt"); if(e){ e.textContent=m; e.className="status"+(err?" err":""); } };
+  const close=()=>g.remove();
+  g.addEventListener("click",e=>{ if(e.target===g) close(); });
+  $("#pCancel").onclick=close;
+  const oldAsset=x.asset;
+  async function useBlob(blob){
+    try{ st("Saving image…"); const small=await shrink(blob); const r=await assets.upload(small,{type:small.type||"image/jpeg"});
+      await db.collection("saves").doc(id).update({asset:r.id,img:null});
+      if(oldAsset) assets.delete(oldAsset).catch(()=>{});
+      close(); toast("Image added"); }
+    catch(err){ st("Couldn’t save that image. Try again.",1); }
+  }
+  async function useUrl(t){
+    const m=String(t).match(/https?:\/\/\S+/i); if(!m) return st("That isn’t an image or an image address. Copy the picture itself and try again.",1);
+    const url=m[0]; st("Checking the image…");
+    const ok=await new Promise(res=>{ const im=new Image(); im.referrerPolicy="no-referrer"; im.onload=()=>res(im.naturalWidth>0); im.onerror=()=>res(false); im.src=url; setTimeout(()=>res(false),8000); });
+    if(!ok) return st("That address didn’t open as a picture. On the store’s page, press and hold the picture and tap Copy, then Paste Image.",1);
+    try{ await db.collection("saves").doc(id).update({img:url,asset:null}); if(oldAsset) assets.delete(oldAsset).catch(()=>{}); close(); toast("Image added"); }
+    catch(_){ st("Couldn’t save. Try again.",1); }
+  }
+  $("#pPaste").onclick=async()=>{
+    try{
+      if(!navigator.clipboard?.read) throw 0;
+      const items=await navigator.clipboard.read();
+      for(const it of items){ const type=it.types.find(t=>t.startsWith("image/")); if(type) return useBlob(await it.getType(type)); }
+      for(const it of items){ if(it.types.includes("text/plain")) return useUrl(await (await it.getType("text/plain")).text()); }
+      st("Nothing to paste. Copy the product picture first.",1);
+    }catch(_){ st("Tap the box below, then tap Paste.",1); $("#pBox").focus(); }
+  };
+  const box=$("#pBox"); let cleared=false;
+  box.addEventListener("focus",()=>{ if(!cleared){ box.textContent=""; cleared=true; } });
+  box.addEventListener("paste",e=>{ e.preventDefault(); const dt=e.clipboardData; if(!dt) return;
+    const f=[...dt.items].find(i=>i.kind==="file"&&i.type.startsWith("image/"))?.getAsFile();
+    if(f) return useBlob(f);
+    const html=dt.getData("text/html"), src=html&&html.match(/<img[^>]+src=["']([^"']+)/i)?.[1];
+    useUrl(src||dt.getData("text/plain")); });
+  $("#pFile").addEventListener("change",e=>{ const f=e.target.files[0]; e.target.value=""; if(f) useBlob(f); });
+  $("#pRemove")?.addEventListener("click",async()=>{ try{ await db.collection("saves").doc(id).update({asset:null,img:null}); if(oldAsset) assets.delete(oldAsset).catch(()=>{}); close(); toast("Image removed"); }catch(_){ st("Couldn’t remove. Try again.",1); } });
+}
+
+// ---------- who is using this phone ----------
+function askWho(then){
+  $("#whoGate")?.remove();
+  const g=document.createElement("div"); g.id="whoGate"; g.className="gate";
+  g.innerHTML=`<div class="gatebox"><h2>Who’s using this phone?</h2><p>Your thumbs up shows your name on each item. You choose once on each phone.</p>
+    <div class="who">${PEOPLE.map(p=>`<button class="btn${ls.get("hm-me")===p.name?" primary":""}" data-who="${p.name}">${p.name}</button>`).join("")}</div></div>`;
+  document.body.appendChild(g);
+  g.addEventListener("click",e=>{ const b=e.target.closest("[data-who]"); if(!b) return; ls.set("hm-me",b.dataset.who); g.remove(); render(); refreshView("saves"); toast(`This phone is ${b.dataset.who}’s`); if(then) then(); });
 }
 
 // ---------- connect this phone ----------
@@ -707,12 +861,14 @@ function backupHtml(){
     <input id="bkFile" type="file" accept="application/json,.json" hidden>
     <button class="row add" id="bkSave">Save a Backup File</button>
     <label class="row add" for="bkFile" tabindex="0">Restore from a Backup File</label>
+    <button class="row add" id="whoRe">This phone is ${esc(meP()?.name||"not set")}. Change</button>
     <button class="row add" id="ghRe">Change Access Key</button>
     <button class="row add" id="ghOut" style="color:var(--bad)">Disconnect This Phone</button>
   </div></section>`;
 }
 document.addEventListener("click",e=>{
   if(e.target.closest("#bkSave")) exportBackup();
+  if(e.target.closest("#whoRe")) askWho();
   if(e.target.closest("#ghRe")) showGate("connect","Paste a new access key for this phone.");
   if(e.target.closest("#ghOut")){ const b=e.target.closest("#ghOut"); if(!b.dataset.armed){ b.dataset.armed="1"; b.textContent="Tap again to disconnect. Your items stay saved on GitHub."; return; } disconnect(); }
 });
@@ -752,6 +908,7 @@ function drawView(){
     <p class="foot-note">≈ means approximate. Tap a measurement to copy it.</p>`}
     <h3 class="sec">${s.shop?"Items":"Saved finds"}</h3>
     <div class="group" id="savesGroup"><div id="addBox"></div><div id="saveList"></div></div>
+    ${s.shop?`<div id="roomOthers"></div>`:""}
     <div id="spaceActs"></div>
   </div></div>`;
   $("#x").onclick=closeView;
@@ -917,12 +1074,16 @@ function drawAddForm(){
 function cleanUrl(v){ v=String(v).trim(); if(!v) return ""; const m=v.match(/https?:\/\/\S+/i); if(m) return m[0]; return /^[\w-]+(\.[\w-]+)+/.test(v)?"https://"+v:v; }
 function drawSaveList(){
   const box=$("#saveList"); if(!box) return; if(!db){ box.innerHTML=""; return; }
+  // Items to Buy also lists what was saved on this room's other spaces, so the room's whole list is in one place.
+  const ob=$("#roomOthers"), cur=SP.find(s=>s.id===openId);
+  if(ob&&cur){ const others=saves.filter(x=>x.space!==openId&&SP.find(s=>s.id===x.space)?.room===cur.room);
+    ob.innerHTML=others.length?`<h3 class="sec">Saved on other spaces in the ${esc(cur.room)}</h3><div class="group">${others.map(x=>saveRow(x,true)).join("")}</div>`:""; }
   const mine=saves.filter(x=>x.space===openId);
   box.innerHTML=mine.map(x=>{
     if(editS===x.id) return `<div class="save editing"><form class="form" id="sForm">
       ${x.asset?`<div class="hint">Photo note</div>`:`<input id="eLnk" type="url" inputmode="url" value="${esc(x.url??"")}" placeholder="Product link" aria-label="Product link">`}
       <div class="row2"><input id="eNt" type="text" value="${esc(x.note??"")}" placeholder="Note: size, color" aria-label="Note"><input id="ePr" type="text" inputmode="decimal" value="${hasPrice(x)?esc(String(x.price)):""}" placeholder="$ Price" aria-label="Price"></div>
-      <div class="btns"><button class="btn primary" type="submit">Save</button><button class="btn" type="button" id="sCancel">Cancel</button></div>
+      <div class="btns"><button class="btn primary" type="submit">Save</button><button class="btn" type="button" id="sCancel">Cancel</button>${x.url?`<button class="btn" type="button" data-addpic="${esc(x.id)}">${x.asset||x.img?"Change Image":"Add Image"}</button>`:""}</div>
       <div class="status" id="sSt"></div></form></div>`;
     return saveRow(x,false);
   }).join("")||`<div class="save"><div class="info"><div class="d">${storeReady?"Nothing saved for this space yet.":"Loading saved finds…"}</div></div></div>`;
@@ -933,7 +1094,7 @@ function drawSaveList(){
     try{
       await db.collection("saves").doc(x.id).delete();
       let undone=false;
-      const isDone=toast(x.asset?"Photo deleted":"Link deleted",()=>{undone=true; db.collection("saves").doc(x.id).set(stripId(x)).catch(()=>toast("Couldn’t restore it"));});
+      const isDone=toast(x.url?"Link deleted":"Photo deleted",()=>{undone=true; db.collection("saves").doc(x.id).set(stripId(x)).catch(()=>toast("Couldn’t restore it"));});
       if(x.asset&&assets) setTimeout(()=>{ if(!undone) assets.delete(x.asset).catch(()=>{}); },6000);
     }catch(_){ b.disabled=false; toast("Couldn’t delete. Try again."); }
   }));
@@ -1004,7 +1165,6 @@ function tryPending(){ if(pendingOpen&&SP.some(s=>s.id===pendingOpen)){ const id
 
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ const v=document.querySelector(".viewer"); if(v) v.remove(); else if($("#scrim")) $("#x").click(); }});
 
-{ const r=ls.get("hm-room"); if(r&&ROOMS.includes(r)) room=r; }
 // Keep the pinned room headers sitting just under the search header as it grows and shrinks.
 function setHdr(){ document.documentElement.style.setProperty("--hdr",$("#top").offsetHeight+"px"); }
 setHdr(); try{ new ResizeObserver(setHdr).observe($("#top")); }catch(_){ addEventListener("resize",setHdr); }
