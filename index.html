@@ -245,6 +245,7 @@ h3.sec{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:.0
 .slot svg{width:22px;height:22px}
 .slot.has{border:0}
 .slot img{position:absolute;max-width:none}
+.candwrap{margin:4px 0 8px}.candhead{font-size:13px;color:var(--muted);margin-bottom:8px}.cands{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;min-height:40px;align-items:center;justify-items:center}.cand{width:100%;aspect-ratio:1;border:0;padding:0;border-radius:10px;overflow:hidden;background:var(--fill);cursor:pointer}.cand img{width:100%;height:100%;object-fit:cover;display:block}
 .slot.busy{border-style:solid;font-size:10px;text-align:center}
 .spin{width:18px;height:18px;border:2.5px solid var(--sep);border-top-color:var(--accent);border-radius:50%;animation:hmspin .8s linear infinite}
 @keyframes hmspin{to{transform:rotate(360deg)}}
@@ -833,35 +834,54 @@ async function initStore(){
 const imgOk=(u,min=120)=>new Promise(res=>{ const im=new Image(); im.referrerPolicy="no-referrer"; im.onload=()=>res(im.naturalWidth>=min&&im.naturalHeight>=min); im.onerror=()=>res(false); im.src=u; setTimeout(()=>res(false),6000); });
 async function getJson(url,ms=8000){ const c=new AbortController(), t=setTimeout(()=>c.abort(),ms); try{ const r=await fetch(url,{signal:c.signal}); if(!r.ok) throw 0; return await r.json(); } finally{ clearTimeout(t); } }
 const absUrl=(u,base)=>{ try{ let x=new URL(String(u).trim(),base).href; return x.replace(/^http:\/\//i,"https://"); }catch(_){ return null; } };
-function imageFromHtml(html,base){
-  const d=new DOMParser().parseFromString(html,"text/html");
-  const metas=["og:image:secure_url","og:image","twitter:image","twitter:image:src"];
-  for(const n of metas){ const m=d.querySelector(`meta[property="${n}"],meta[name="${n}"]`)?.getAttribute("content"); if(m) return absUrl(m,base); }
+function imagesFromHtml(html,base){
+  const d=new DOMParser().parseFromString(html,"text/html"), out=[];
+  for(const n of ["og:image:secure_url","og:image","twitter:image","twitter:image:src"]) d.querySelectorAll(`meta[property="${n}"],meta[name="${n}"]`).forEach(m=>{ const c=m.getAttribute("content"); if(c) out.push(c); });
   for(const sc of d.querySelectorAll('script[type="application/ld+json"]')){
-    try{ const walk=o=>{ if(!o||typeof o!=="object") return null; if(Array.isArray(o)){ for(const v of o){ const r=walk(v); if(r) return r; } return null; }
-        const im=o.image; if(im){ const f=Array.isArray(im)?im[0]:im; const u=typeof f==="string"?f:f?.url; if(u) return u; }
-        for(const k of Object.keys(o)){ const r=walk(o[k]); if(r) return r; } return null; };
-      const u=walk(JSON.parse(sc.textContent)); if(u) return absUrl(u,base); }catch(_){}
+    try{ const walk=o=>{ if(!o||typeof o!=="object") return; if(Array.isArray(o)){ o.forEach(walk); return; }
+        const im=o.image; if(im) (Array.isArray(im)?im:[im]).forEach(f=>{ const u=typeof f==="string"?f:f?.url; if(u) out.push(u); });
+        Object.keys(o).forEach(k=>walk(o[k])); };
+      walk(JSON.parse(sc.textContent)); }catch(_){}
   }
-  return null;
+  let n=0; d.querySelectorAll("img[src]").forEach(i=>{ const u=i.getAttribute("src"); if(n<8&&u&&!u.startsWith("data:")){ out.push(u); n++; } });
+  return out.map(u=>absUrl(u,base)).filter(Boolean);
 }
-function amazonImage(url){ const m=String(url).match(/amazon\.[a-z.]+\/(?:[^?#]*\/)?(?:dp|gp\/product|gp\/aw\/d)\/([A-Z0-9]{10})/i); return m?`https://m.media-amazon.com/images/P/${m[1].toUpperCase()}.01._SCRM_.jpg`:null; }
-let previewJobs=new Map();
+function amazonImage(url){ const m=String(url||"").match(/amazon\.[a-z.]+\/(?:[^?#]*\/)?(?:dp|gp\/product|gp\/aw\/d)\/([A-Z0-9]{10})/i); return m?`https://m.media-amazon.com/images/P/${m[1].toUpperCase()}.01._SCRM_.jpg`:null; }
+// Site artwork that is not the product: logos, banners and Amazon's shared page graphics (product pictures live under /images/I/ or /images/P/).
+function genericImage(u){ const x=String(u||""); if(/logo|favicon|sprite|placeholder|captcha|spinner|default[-_]?image|no[-_]?image/i.test(x)) return true;
+  if(/media-amazon\.com|ssl-images-amazon\.com/i.test(x)&&!/\/images\/(I|P)\//.test(x)) return true; return false; }
+const rawJobs=new Map(), previewJobs=new Map();
+// One list of possible pictures per service, looked up once per link.
+function rawLists(url){
+  if(rawJobs.has(url)) return rawJobs.get(url);
+  const e=encodeURIComponent(url), arr=x=>(Array.isArray(x)?x:[x]).filter(Boolean);
+  const ml=getJson("https://api.microlink.io/?url="+e).catch(()=>null);
+  const lists=[
+    (async()=>arr(amazonImage(url)||amazonImage((await ml)?.data?.url)))(),
+    (async()=>arr((await ml)?.data?.image?.url))(),
+    (async()=>{ const r=await getJson("https://jsonlink.io/api/extract?url="+e); return arr(r?.images); })(),
+    (async()=>{ const r=await getJson("https://api.allorigins.win/get?url="+e,9000); return r?.contents?imagesFromHtml(r.contents,url):[]; })()
+  ].map(p=>p.catch(()=>[]));
+  rawJobs.set(url,lists); return lists;
+}
+const usable=async(u,base)=>{ const x=absUrl(u,base); return x&&!genericImage(x)&&await imgOk(x)?x:null; };
+// The first good picture to come back, used as the automatic choice.
 function fetchPreview(link){
   const url=cleanUrl(link); if(!/^https?:\/\//i.test(url)) return Promise.resolve(null);
   if(previewJobs.has(url)) return previewJobs.get(url);
-  const e=encodeURIComponent(url);
-  const tries=[
-    async()=>{ const r=await getJson("https://api.microlink.io/?url="+e); return r?.data?.image?.url; },
-    async()=>{ const r=await getJson("https://jsonlink.io/api/extract?url="+e); return r?.images?.[0]; },
-    async()=>{ const r=await getJson("https://api.allorigins.win/get?url="+e,9000); return r?.contents?imageFromHtml(r.contents,url):null; },
-    async()=>amazonImage(url)
-  ];
-  const job=new Promise(resolve=>{ let left=tries.length;
-    const fail=()=>{ if(--left===0) resolve(null); };
-    tries.forEach(t=>{ Promise.resolve().then(async()=>{ const u=absUrl(await t(),url); return u&&await imgOk(u)?u:null; }).then(u=>{ if(u) resolve(u); else fail(); },fail); }); });
+  const lists=rawLists(url);
+  const job=new Promise(resolve=>{ let left=lists.length; const fail=()=>{ if(--left===0) resolve(null); };
+    lists.forEach(l=>l.then(async list=>{ for(const u of list.slice(0,6)){ const ok=await usable(u,url); if(ok) return resolve(ok); } fail(); },fail)); });
   previewJobs.set(url,job); job.then(r=>{ if(!r) previewJobs.delete(url); });
   return job;
+}
+// Every good picture found for the link, so the person can choose the right one.
+async function previewAll(link,max=9){
+  const url=cleanUrl(link); if(!/^https?:\/\//i.test(url)) return [];
+  const all=(await Promise.all(rawLists(url))).flat().map(u=>absUrl(u,url)).filter(u=>u&&!genericImage(u));
+  const uniq=[...new Set(all)].slice(0,24);
+  const ok=await Promise.all(uniq.map(u=>imgOk(u).then(v=>v?u:null)));
+  return ok.filter(Boolean).slice(0,max);
 }
 // ---------- add an image to a saved link ----------
 // The image is either pasted (saved as a photo in your private repository) or an image web address (shown straight from the store).
@@ -871,9 +891,9 @@ function pickImage({title,hasImage,onAdjust,onRemove,done,link}){
   const g=document.createElement("div"); g.id="picSheet"; g.className="sheetbg";
   g.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}">
     <h2>${esc(title)}</h2>
+    ${link?`<div id="pCands" class="candwrap"><div class="candhead">Pictures from the link. Tap the right one.</div><div class="cands" id="pGrid"><span class="spin"></span></div></div>`:""}
     <p>On the store’s page, press and hold the product picture and tap <b>Copy</b>. Then come back here and tap <b>Paste Image</b>.</p>
     <button class="btn primary" id="pPaste">Paste Image</button>
-    ${link?`<button class="btn" id="pLink">Use Picture from the Link</button>`:""}
     <div class="pastebox" id="pBox" contenteditable="true" role="textbox" aria-label="Paste an image or image address">Or tap here and paste the image or its web address</div>
     <label class="btn" for="pFile" tabindex="0">Choose from Photos</label><input id="pFile" type="file" accept="image/*" hidden>
     ${hasImage?`<button class="btn" id="pAdjust">Adjust Current Image</button><button class="btn danger" id="pRemove">Remove Image</button>`:""}
@@ -903,10 +923,12 @@ function pickImage({title,hasImage,onAdjust,onRemove,done,link}){
       st("Nothing to paste. Copy the product picture first.",1);
     }catch(_){ st("Tap the box below, then tap Paste.",1); $("#pBox").focus(); }
   };
-  $("#pLink")?.addEventListener("click",async()=>{ const l=link(); if(!l) return st("Add the product link first.",1);
-    st("Getting the picture from the link…"); const u=await fetchPreview(l);
-    if(!u) return st("That site did not share its picture. Copy the picture and tap Paste Image.",1);
-    close(); done({url:u}); });
+  if(link){ const l=link(); const wrap=$("#pCands");
+    if(!l){ wrap.innerHTML='<div class="candhead">Add the product link first to see its pictures.</div>'; }
+    else previewAll(l).then(list=>{ const w=$("#pCands"); if(!w) return;
+      if(!list.length){ w.innerHTML='<div class="candhead">That site did not share its pictures. Copy the picture and tap Paste Image.</div>'; return; }
+      w.querySelector("#pGrid").innerHTML=list.map(u=>`<button type="button" class="cand" data-u="${esc(u)}" aria-label="Use this picture"><img src="${esc(u)}" alt="" referrerpolicy="no-referrer"></button>`).join("");
+      w.querySelectorAll(".cand").forEach(b=>b.onclick=()=>{ close(); done({url:b.dataset.u}); }); }); }
   const box=$("#pBox"); let cleared=false;
   box.addEventListener("focus",()=>{ if(!cleared){ box.textContent=""; cleared=true; } });
   box.addEventListener("paste",e=>{ e.preventDefault(); const dt=e.clipboardData; if(!dt) return;
@@ -1108,15 +1130,32 @@ async function importBackup(file){
     toast(`Restored ${Object.keys(data.saves||{}).length} saved items`);
   }catch(_){ toast("Couldn’t finish restoring. Check your connection and try again."); }
 }
+
+// ---------- keep every phone on the newest version ----------
+// Home-screen apps keep an old copy of the page. This checks GitHub for a newer one and reloads when it finds one.
+const BUILD="2026-11-01-e";
+async function checkUpdate(force){
+  try{ const r=await fetch(location.pathname+"?c="+Date.now(),{cache:"no-store"}); if(!r.ok) return false;
+    const m=(await r.text()).match(/const BUILD="([^"]+)"/); if(!m||m[1]===BUILD) return false;
+    if(!force&&ls.get("hm-upd")===m[1]) return false;
+    ls.set("hm-upd",m[1]); location.replace(location.pathname+"?v="+encodeURIComponent(m[1])); return true;
+  }catch(_){ return false; }
+}
+document.addEventListener("click",async e=>{ const b=e.target.closest("#updNow"); if(!b) return; b.textContent="Checking…";
+  const went=await checkUpdate(true); if(!went){ b.textContent="Update the App"; toast("You have the newest version"); } });
+let lastUpd=0;
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&Date.now()-lastUpd>300000){ lastUpd=Date.now(); checkUpdate(false); } });
+setTimeout(()=>{ lastUpd=Date.now(); checkUpdate(false); },2500);
 function backupHtml(){
   const last=+ls.get("hm-backup"); const when=last?new Date(last).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}):"never";
   return `<section><div class="sechead small">Connection and Backup</div><div class="group">
-    <div class="save"><div class="info"><div class="n">Saving to ${esc(GH?.repo||"")} on GitHub. Everything added on either phone shows up on both.</div><div class="d">Last backup file: ${when}</div></div></div>
+    <div class="save"><div class="info"><div class="n">Saving to ${esc(GH?.repo||"")} on GitHub. Everything added on either phone shows up on both.</div><div class="d">Last backup file: ${when}</div><div class="d">App version ${BUILD}</div></div></div>
     <input id="bkFile" type="file" accept="application/json,.json" hidden>
     <button class="row add" id="bkSave">Save a Backup File</button>
     <label class="row add" for="bkFile" tabindex="0">Restore from a Backup File</label>
     <button class="row add" id="whoRe">This phone is ${esc(meP()?.name||"not set")}. Change</button>
     <button class="row add" id="ghRe">Change Access Key</button>
+    <button class="row add" id="updNow">Update the App</button>
     <button class="row add" id="ghOut" style="color:var(--bad)">Disconnect This Phone</button>
   </div></section>`;
 }
@@ -1320,7 +1359,7 @@ function drawAddForm(){
     if(cleanUrl($("#lnk")?.value||"")!==u){ drawSlot(); return; }
     if(pendingImg){ return; }
     if(!img){ drawSlot(); st("That site did not share its picture. Tap Image to paste one.",1); return; }
-    pendingImg={source:{url:img},src:img,crop:null,auto:true,from:u}; drawSlot(); st("Picture added"); setTimeout(()=>{ if($("#st")?.textContent==="Picture added") st(""); },1500); };
+    pendingImg={source:{url:img},src:img,crop:null,auto:true,from:u}; drawSlot(); st("Picture added. Wrong one? Tap the square to choose another."); };
   $("#lnk").addEventListener("input",()=>{ clearTimeout(autoT); if(pendingImg?.auto&&cleanUrl($("#lnk").value)!==pendingImg.from){ pendingImg=null; drawSlot(); } autoT=setTimeout(autoPic,600); });
   $("#lnk").addEventListener("paste",()=>{ clearTimeout(autoT); autoT=setTimeout(autoPic,250); });
   $("#lnk").addEventListener("change",()=>{ clearTimeout(autoT); autoPic(); });
