@@ -245,6 +245,7 @@ h3.sec{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:.0
 .slot svg{width:22px;height:22px}
 .slot.has{border:0}
 .slot img{position:absolute;max-width:none}
+.slot img:not([style]){width:100%;height:100%;left:0;top:0;object-fit:cover}
 .save.editing{display:block;padding:12px;margin:8px;border-radius:12px;box-shadow:inset 0 0 0 2px var(--accent)}
 .save.editing .form{padding:0}
 .edithead{display:flex;align-items:center;gap:12px;margin-bottom:12px}
@@ -824,16 +825,50 @@ async function initStore(){
   if(GH?.repo&&GH?.token){ cacheLoad(); hideGate(); startData(); } else showGate("connect");
 }
 
+// ---------- pull the product picture from a pasted link ----------
+// Browsers cannot read other shops' pages directly, so the link goes through public link-preview services, one after another, until a real picture comes back.
+const imgOk=(u,min=120)=>new Promise(res=>{ const im=new Image(); im.referrerPolicy="no-referrer"; im.onload=()=>res(im.naturalWidth>=min&&im.naturalHeight>=min); im.onerror=()=>res(false); im.src=u; setTimeout(()=>res(false),9000); });
+async function getJson(url,ms=10000){ const c=new AbortController(), t=setTimeout(()=>c.abort(),ms); try{ const r=await fetch(url,{signal:c.signal}); if(!r.ok) throw 0; return await r.json(); } finally{ clearTimeout(t); } }
+const absUrl=(u,base)=>{ try{ let x=new URL(String(u).trim(),base).href; return x.replace(/^http:\/\//i,"https://"); }catch(_){ return null; } };
+function imageFromHtml(html,base){
+  const d=new DOMParser().parseFromString(html,"text/html");
+  const metas=["og:image:secure_url","og:image","twitter:image","twitter:image:src"];
+  for(const n of metas){ const m=d.querySelector(`meta[property="${n}"],meta[name="${n}"]`)?.getAttribute("content"); if(m) return absUrl(m,base); }
+  for(const sc of d.querySelectorAll('script[type="application/ld+json"]')){
+    try{ const walk=o=>{ if(!o||typeof o!=="object") return null; if(Array.isArray(o)){ for(const v of o){ const r=walk(v); if(r) return r; } return null; }
+        const im=o.image; if(im){ const f=Array.isArray(im)?im[0]:im; const u=typeof f==="string"?f:f?.url; if(u) return u; }
+        for(const k of Object.keys(o)){ const r=walk(o[k]); if(r) return r; } return null; };
+      const u=walk(JSON.parse(sc.textContent)); if(u) return absUrl(u,base); }catch(_){}
+  }
+  return null;
+}
+function amazonImage(url){ const m=String(url).match(/amazon\.[a-z.]+\/(?:[^?#]*\/)?(?:dp|gp\/product|gp\/aw\/d)\/([A-Z0-9]{10})/i); return m?`https://m.media-amazon.com/images/P/${m[1].toUpperCase()}.01._SCRM_.jpg`:null; }
+let previewJobs=new Map();
+function fetchPreview(link){
+  const url=cleanUrl(link); if(!/^https?:\/\//i.test(url)) return Promise.resolve(null);
+  if(previewJobs.has(url)) return previewJobs.get(url);
+  const e=encodeURIComponent(url);
+  const tries=[
+    async()=>{ const r=await getJson("https://api.microlink.io/?url="+e); return r?.data?.image?.url; },
+    async()=>{ const r=await getJson("https://jsonlink.io/api/extract?url="+e); return r?.images?.[0]; },
+    async()=>{ const r=await getJson("https://api.allorigins.win/get?url="+e,14000); return r?.contents?imageFromHtml(r.contents,url):null; },
+    async()=>amazonImage(url)
+  ];
+  const job=(async()=>{ for(const t of tries){ try{ const u=absUrl(await t(),url); if(u&&await imgOk(u)) return u; }catch(_){} } return null; })();
+  previewJobs.set(url,job); job.then(r=>{ if(!r) previewJobs.delete(url); });
+  return job;
+}
 // ---------- add an image to a saved link ----------
 // The image is either pasted (saved as a photo in your private repository) or an image web address (shown straight from the store).
 // Pick an image by pasting it, pasting its web address, or choosing from Photos. Calls done({blob}) or done({url}).
-function pickImage({title,hasImage,onAdjust,onRemove,done}){
+function pickImage({title,hasImage,onAdjust,onRemove,done,link}){
   $("#picSheet")?.remove();
   const g=document.createElement("div"); g.id="picSheet"; g.className="sheetbg";
   g.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}">
     <h2>${esc(title)}</h2>
     <p>On the store’s page, press and hold the product picture and tap <b>Copy</b>. Then come back here and tap <b>Paste Image</b>.</p>
     <button class="btn primary" id="pPaste">Paste Image</button>
+    ${link?`<button class="btn" id="pLink">Use Picture from the Link</button>`:""}
     <div class="pastebox" id="pBox" contenteditable="true" role="textbox" aria-label="Paste an image or image address">Or tap here and paste the image or its web address</div>
     <label class="btn" for="pFile" tabindex="0">Choose from Photos</label><input id="pFile" type="file" accept="image/*" hidden>
     ${hasImage?`<button class="btn" id="pAdjust">Adjust Current Image</button><button class="btn danger" id="pRemove">Remove Image</button>`:""}
@@ -863,6 +898,10 @@ function pickImage({title,hasImage,onAdjust,onRemove,done}){
       st("Nothing to paste. Copy the product picture first.",1);
     }catch(_){ st("Tap the box below, then tap Paste.",1); $("#pBox").focus(); }
   };
+  $("#pLink")?.addEventListener("click",async()=>{ const l=link(); if(!l) return st("Add the product link first.",1);
+    st("Getting the picture from the link…"); const u=await fetchPreview(l);
+    if(!u) return st("That site did not share its picture. Copy the picture and tap Paste Image.",1);
+    close(); done({url:u}); });
   const box=$("#pBox"); let cleared=false;
   box.addEventListener("focus",()=>{ if(!cleared){ box.textContent=""; cleared=true; } });
   box.addEventListener("paste",e=>{ e.preventDefault(); const dt=e.clipboardData; if(!dt) return;
@@ -881,11 +920,22 @@ async function saveImageTo(id,source,crop){
   if(old) assets.delete(old).catch(()=>{});
 }
 function afterImage(){ render(); if(openId) drawSaveList(); }
+// Pasting a copied picture into the link, note or price boxes of the add or edit form attaches it as the image.
+document.addEventListener("paste",e=>{
+  const t=e.target; if(!t||!t.closest||t.closest("#picSheet")) return;
+  const dt=e.clipboardData; if(!dt) return;
+  const f=[...(dt.items||[])].find(i=>i.kind==="file"&&i.type.startsWith("image/"))?.getAsFile()||[...(dt.files||[])].find(x=>x.type.startsWith("image/"));
+  if(!f) return;
+  const add=t.closest("#addForm"), edit=t.closest("#sForm"); if(!add&&!edit) return;
+  e.preventDefault(); const source={blob:f}, src=srcOf(source);
+  if(add) adjustImage({src,isUrl:false,crop:null,saveLabel:"Done",onSave:async c=>{ pendingImg={source,src,crop:c}; drawSlot(); }});
+  else { const id=edit.dataset.id; adjustImage({src,isUrl:false,crop:null,saveLabel:"Save Image",onSave:async c=>{ await saveImageTo(id,source,c); afterImage(); toast("Image saved"); }}); }
+});
 const srcOf=source=>source.blob?URL.createObjectURL(source.blob):source.url;
 // Add or change the image on a saved item: pick it, adjust it, and it saves once.
 function openPicSheet(id){
   const x=saves.find(s=>s.id===id); if(!x) return; const has=!!(x.asset||x.img);
-  pickImage({title:has?"Change Image":"Add an Image",hasImage:has,
+  pickImage({title:has?"Change Image":"Add an Image",hasImage:has,link:x.url?()=>x.url:null,
     onAdjust:()=>openCropper(id),
     onRemove:async()=>{ await db.collection("saves").doc(id).update({asset:null,img:null,crop:null}); if(x.asset) assets.delete(x.asset).catch(()=>{}); afterImage(); toast("Image removed"); },
     done:source=>adjustImage({src:srcOf(source),isUrl:!!source.url,crop:null,saveLabel:"Save Image",
@@ -1250,25 +1300,41 @@ function drawAddForm(){
   pendingImg=null;
   box.innerHTML=`<form class="form" id="addForm">
       <div class="linkrow"><button type="button" class="slot" id="aPic" aria-label="Add an image">${PICPLUS}Image</button>
-      <input id="lnk" type="url" inputmode="url" placeholder="Paste a product link" autocomplete="off" aria-label="Product link"></div>
+      <input id="lnk" type="url" inputmode="url" placeholder="Paste a product link or image" autocomplete="off" aria-label="Product link or image"></div>
       <div class="row2"><input id="nt" type="text" placeholder="Note: size, color" autocomplete="off" aria-label="Note"><input id="pr" type="text" inputmode="decimal" placeholder="$ Price" autocomplete="off" aria-label="Price"></div>
       <div class="btns"><button class="btn primary" type="submit" id="saveLink">Save Link</button>
       <label class="btn" for="ph" tabindex="0" ${assets?"":"hidden"}>Add Photo</label><input id="ph" type="file" accept="image/*" multiple hidden></div>
       <div class="status" id="st"></div></form>`;
-  $("#aPic").onclick=()=>pickImage({title:pendingImg?"Change Image":"Add an Image",hasImage:!!pendingImg,
+  $("#aPic").onclick=()=>pickImage({title:pendingImg?"Change Image":"Add an Image",hasImage:!!pendingImg,link:()=>cleanUrl($("#lnk").value),
     onAdjust:()=>adjustImage({src:pendingImg.src,isUrl:!!pendingImg.source.url,crop:pendingImg.crop,saveLabel:"Done",onSave:async c=>{ pendingImg.crop=c; drawSlot(); }}),
     onRemove:async()=>{ pendingImg=null; drawSlot(); },
     done:source=>{ const src=srcOf(source); adjustImage({src,isUrl:!!source.url,crop:null,saveLabel:"Done",onSave:async c=>{ pendingImg={source,src,crop:c}; drawSlot(); }}); }});
+  let autoT=null;
+  const autoPic=async()=>{ const u=cleanUrl($("#lnk")?.value||""); if(!/^https?:\/\/\S+\.\S+/i.test(u)||pendingImg) return;
+    st("Getting the picture from the link…"); const img=await fetchPreview(u);
+    if(cleanUrl($("#lnk")?.value||"")!==u) return;
+    if(pendingImg) return;
+    if(!img){ st("That site did not share its picture. Tap Image to paste one.",1); return; }
+    pendingImg={source:{url:img},src:img,crop:null,auto:true,from:u}; drawSlot(); st(""); };
+  $("#lnk").addEventListener("input",()=>{ clearTimeout(autoT); if(pendingImg?.auto&&cleanUrl($("#lnk").value)!==pendingImg.from){ pendingImg=null; drawSlot(); } autoT=setTimeout(autoPic,600); });
+  $("#lnk").addEventListener("paste",()=>{ clearTimeout(autoT); autoT=setTimeout(autoPic,250); });
   $("label[for=ph]")?.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); $("#ph").click(); }});
   $("#addForm").addEventListener("submit",async e=>{e.preventDefault(); const u=cleanUrl($("#lnk").value); const n=$("#nt").value.trim(); const p=parsePrice($("#pr").value);
     if(!u&&!n&&!pendingImg){st("Paste a link first.",1);return;}
     if(Number.isNaN(p)){st("Type the price as a number, like 249 or 249.99.",1);return;}
-    $("#saveLink").disabled=true; st(pendingImg?"Saving image…":"Saving…");
+    $("#saveLink").disabled=true;
+    let lateJob=null;
+    if(u&&!pendingImg&&/^https?:\/\//i.test(u)){ st("Getting the picture from the link…"); const job=fetchPreview(u);
+      const img=await Promise.race([job,new Promise(r=>setTimeout(()=>r(undefined),6000))]);
+      if(img&&!pendingImg) pendingImg={source:{url:img},src:img,crop:null,auto:true,from:u}; else if(img===undefined) lateJob=job; }
+    st(pendingImg?"Saving image…":"Saving…");
     try{ const item={space:openId,url:u||null,note:n||null,price:p,created:Date.now()};
       if(pendingImg){ item.crop=pendingImg.crop;
         if(pendingImg.source.blob){ const small=await shrink(pendingImg.source.blob); const r=await assets.upload(small,{type:small.type||"image/jpeg"}); item.asset=r.id; }
         else item.img=pendingImg.source.url; }
-      await db.collection("saves").add(item); $("#lnk").value="";$("#nt").value="";$("#pr").value=""; pendingImg=null; drawSlot(); st(""); toast(u?"Link saved":"Saved"); }
+      const added=await db.collection("saves").add(item);
+      if(lateJob) lateJob.then(async img=>{ if(!img) return; const c2=saves.find(s=>s.id===added.id); if(c2&&!c2.asset&&!c2.img){ await saveImageTo(added.id,{url:img},null); afterImage(); toast("Picture added from the link"); } }).catch(()=>{});
+      $("#lnk").value="";$("#nt").value="";$("#pr").value=""; pendingImg=null; drawSlot(); st(""); toast(u?"Link saved":"Saved"); }
     catch(err){ denied(err); st(errMsg(err),1); }
     finally{ const b=$("#saveLink"); if(b) b.disabled=false; }
   });
@@ -1286,7 +1352,7 @@ function drawSlot(){ const b=$("#aPic"); if(!b) return;
   if(!pendingImg){ b.className="slot"; b.innerHTML=PICPLUS+"Image"; b.setAttribute("aria-label","Add an image"); return; }
   b.className="slot has"; b.setAttribute("aria-label","Change image");
   b.innerHTML=`<img src="${esc(pendingImg.src)}" alt="" ${pendingImg.source.url?'referrerpolicy="no-referrer"':""}>`;
-  const im=b.querySelector("img"); const fit=()=>Object.assign(im.style,cropCss(pendingImg.crop,im.naturalWidth,im.naturalHeight));
+  const im=b.querySelector("img"); if(!pendingImg.crop) return; const fit=()=>Object.assign(im.style,cropCss(pendingImg.crop,im.naturalWidth,im.naturalHeight));
   if(im.complete&&im.naturalWidth) fit(); else im.onload=fit; }
 function cleanUrl(v){ v=String(v).trim(); if(!v) return ""; const m=v.match(/https?:\/\/\S+/i); if(m) return m[0]; return /^[\w-]+(\.[\w-]+)+/.test(v)?"https://"+v:v; }
 function drawSaveList(){
@@ -1307,7 +1373,7 @@ function editCard(x){
     :x.img?`<button type="button" class="pic" data-addpic="${esc(x.id)}" aria-label="Change image">${picImg(x.img,x,"Item image",'referrerpolicy="no-referrer"')}</button>`
     :`<button type="button" class="pic addpic" data-addpic="${esc(x.id)}" aria-label="Add an image">${PICPLUS}Add image</button>`;
   return `<div class="save editing"><div class="edithead">${pic}<div><div class="t">Editing this item</div><div class="h">${has?"Tap the picture to change it":"Tap the box to add a picture"}</div></div></div><form class="form" id="sForm" data-id="${esc(x.id)}">
-    <input id="eLnk" type="url" inputmode="url" value="${esc(keep?keep.l:(x.url??""))}" placeholder="Product link" aria-label="Product link">
+    <input id="eLnk" type="url" inputmode="url" value="${esc(keep?keep.l:(x.url??""))}" placeholder="Product link, or paste an image" aria-label="Product link or image">
     <div class="row2"><input id="eNt" type="text" value="${esc(keep?keep.n:(x.note??""))}" placeholder="Note: size, color" aria-label="Note"><input id="ePr" type="text" inputmode="decimal" value="${esc(keep?keep.p:(hasPrice(x)?String(x.price):""))}" placeholder="$ Price" aria-label="Price"></div>
     <div class="btns"><button class="btn primary" type="submit">Save</button><button class="btn" type="button" id="sCancel">Cancel</button>${has?`<button class="btn" type="button" data-crop-open="${esc(x.id)}">Adjust Image</button>`:""}</div>
     <div class="status" id="sSt"></div></form></div>`;
@@ -1323,7 +1389,9 @@ document.addEventListener("submit",async e=>{ const f=e.target.closest("#sForm")
   if(Number.isNaN(p)) return msg("Type the price as a number, like 249 or 249.99.");
   const patch={note:$("#eNt").value.trim()||null,price:p,url:cleanUrl($("#eLnk").value)||null};
   const btn=f.querySelector("[type=submit]"); btn.disabled=true;
-  try{ await db.collection("saves").doc(id).update(patch); editS=null; document.activeElement?.blur?.(); redrawEdit(); toast("Changes saved"); }
+  try{ await db.collection("saves").doc(id).update(patch); editS=null; document.activeElement?.blur?.(); redrawEdit(); toast("Changes saved");
+    const cur=saves.find(s=>s.id===id);
+    if(patch.url&&cur&&!cur.asset&&!cur.img) fetchPreview(patch.url).then(async u=>{ if(!u) return; const c2=saves.find(s=>s.id===id); if(c2&&!c2.asset&&!c2.img){ await saveImageTo(id,{url:u},null); afterImage(); toast("Picture added from the link"); } }).catch(()=>{}); }
   catch(err){ denied(err); btn.disabled=false; msg(errMsg(err)); }
 });
 function st(msg,err){const e=$("#st"); if(e){e.textContent=msg; e.className="status"+(err?" err":"");}}
