@@ -245,6 +245,9 @@ h3.sec{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:.0
 .slot svg{width:22px;height:22px}
 .slot.has{border:0}
 .slot img{position:absolute;max-width:none}
+.slot.busy{border-style:solid;font-size:10px;text-align:center}
+.spin{width:18px;height:18px;border:2.5px solid var(--sep);border-top-color:var(--accent);border-radius:50%;animation:hmspin .8s linear infinite}
+@keyframes hmspin{to{transform:rotate(360deg)}}
 .slot img:not([style]){width:100%;height:100%;left:0;top:0;object-fit:cover}
 .save.editing{display:block;padding:12px;margin:8px;border-radius:12px;box-shadow:inset 0 0 0 2px var(--accent)}
 .save.editing .form{padding:0}
@@ -826,9 +829,9 @@ async function initStore(){
 }
 
 // ---------- pull the product picture from a pasted link ----------
-// Browsers cannot read other shops' pages directly, so the link goes through public link-preview services, one after another, until a real picture comes back.
-const imgOk=(u,min=120)=>new Promise(res=>{ const im=new Image(); im.referrerPolicy="no-referrer"; im.onload=()=>res(im.naturalWidth>=min&&im.naturalHeight>=min); im.onerror=()=>res(false); im.src=u; setTimeout(()=>res(false),9000); });
-async function getJson(url,ms=10000){ const c=new AbortController(), t=setTimeout(()=>c.abort(),ms); try{ const r=await fetch(url,{signal:c.signal}); if(!r.ok) throw 0; return await r.json(); } finally{ clearTimeout(t); } }
+// Browsers cannot read other shops' pages directly, so the link goes to several public link-preview services at the same time and the first real picture wins.
+const imgOk=(u,min=120)=>new Promise(res=>{ const im=new Image(); im.referrerPolicy="no-referrer"; im.onload=()=>res(im.naturalWidth>=min&&im.naturalHeight>=min); im.onerror=()=>res(false); im.src=u; setTimeout(()=>res(false),6000); });
+async function getJson(url,ms=8000){ const c=new AbortController(), t=setTimeout(()=>c.abort(),ms); try{ const r=await fetch(url,{signal:c.signal}); if(!r.ok) throw 0; return await r.json(); } finally{ clearTimeout(t); } }
 const absUrl=(u,base)=>{ try{ let x=new URL(String(u).trim(),base).href; return x.replace(/^http:\/\//i,"https://"); }catch(_){ return null; } };
 function imageFromHtml(html,base){
   const d=new DOMParser().parseFromString(html,"text/html");
@@ -851,10 +854,12 @@ function fetchPreview(link){
   const tries=[
     async()=>{ const r=await getJson("https://api.microlink.io/?url="+e); return r?.data?.image?.url; },
     async()=>{ const r=await getJson("https://jsonlink.io/api/extract?url="+e); return r?.images?.[0]; },
-    async()=>{ const r=await getJson("https://api.allorigins.win/get?url="+e,14000); return r?.contents?imageFromHtml(r.contents,url):null; },
+    async()=>{ const r=await getJson("https://api.allorigins.win/get?url="+e,9000); return r?.contents?imageFromHtml(r.contents,url):null; },
     async()=>amazonImage(url)
   ];
-  const job=(async()=>{ for(const t of tries){ try{ const u=absUrl(await t(),url); if(u&&await imgOk(u)) return u; }catch(_){} } return null; })();
+  const job=new Promise(resolve=>{ let left=tries.length;
+    const fail=()=>{ if(--left===0) resolve(null); };
+    tries.forEach(t=>{ Promise.resolve().then(async()=>{ const u=absUrl(await t(),url); return u&&await imgOk(u)?u:null; }).then(u=>{ if(u) resolve(u); else fail(); },fail); }); });
   previewJobs.set(url,job); job.then(r=>{ if(!r) previewJobs.delete(url); });
   return job;
 }
@@ -1311,13 +1316,14 @@ function drawAddForm(){
     done:source=>{ const src=srcOf(source); adjustImage({src,isUrl:!!source.url,crop:null,saveLabel:"Done",onSave:async c=>{ pendingImg={source,src,crop:c}; drawSlot(); }}); }});
   let autoT=null;
   const autoPic=async()=>{ const u=cleanUrl($("#lnk")?.value||""); if(!/^https?:\/\/\S+\.\S+/i.test(u)||pendingImg) return;
-    st("Getting the picture from the link…"); const img=await fetchPreview(u);
-    if(cleanUrl($("#lnk")?.value||"")!==u) return;
-    if(pendingImg) return;
-    if(!img){ st("That site did not share its picture. Tap Image to paste one.",1); return; }
-    pendingImg={source:{url:img},src:img,crop:null,auto:true,from:u}; drawSlot(); st(""); };
+    st("Getting the picture from the link…"); slotBusy=true; drawSlot(); const img=await fetchPreview(u); slotBusy=false;
+    if(cleanUrl($("#lnk")?.value||"")!==u){ drawSlot(); return; }
+    if(pendingImg){ return; }
+    if(!img){ drawSlot(); st("That site did not share its picture. Tap Image to paste one.",1); return; }
+    pendingImg={source:{url:img},src:img,crop:null,auto:true,from:u}; drawSlot(); st("Picture added"); setTimeout(()=>{ if($("#st")?.textContent==="Picture added") st(""); },1500); };
   $("#lnk").addEventListener("input",()=>{ clearTimeout(autoT); if(pendingImg?.auto&&cleanUrl($("#lnk").value)!==pendingImg.from){ pendingImg=null; drawSlot(); } autoT=setTimeout(autoPic,600); });
   $("#lnk").addEventListener("paste",()=>{ clearTimeout(autoT); autoT=setTimeout(autoPic,250); });
+  $("#lnk").addEventListener("change",()=>{ clearTimeout(autoT); autoPic(); });
   $("label[for=ph]")?.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); $("#ph").click(); }});
   $("#addForm").addEventListener("submit",async e=>{e.preventDefault(); const u=cleanUrl($("#lnk").value); const n=$("#nt").value.trim(); const p=parsePrice($("#pr").value);
     if(!u&&!n&&!pendingImg){st("Paste a link first.",1);return;}
@@ -1346,9 +1352,10 @@ function drawAddForm(){
     $("#nt").value=""; $("#pr").value=""; st(""); toast(files.length>1?"Photos saved":"Photo saved");
   });
 }
-let pendingImg=null;
+let pendingImg=null, slotBusy=false;
 // The image square in the add form: the picked image with its adjustment, or the Add image box.
 function drawSlot(){ const b=$("#aPic"); if(!b) return;
+  if(slotBusy&&!pendingImg){ b.className="slot busy"; b.innerHTML='<span class="spin"></span>Getting picture'; b.setAttribute("aria-label","Getting the picture"); return; }
   if(!pendingImg){ b.className="slot"; b.innerHTML=PICPLUS+"Image"; b.setAttribute("aria-label","Add an image"); return; }
   b.className="slot has"; b.setAttribute("aria-label","Change image");
   b.innerHTML=`<img src="${esc(pendingImg.src)}" alt="" ${pendingImg.source.url?'referrerpolicy="no-referrer"':""}>`;
